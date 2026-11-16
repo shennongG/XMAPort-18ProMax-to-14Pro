@@ -1,0 +1,46 @@
+{
+  "description": "X-MiPort 小米18 Pro Max(madrid) → 小米14 Pro(shennong) 完美包内容基线（真机可开机）",
+  "source_zip": "X-MiPort_Mi14Pro_OS4.0.30.0.XEOCNXM_madrid_7a648fc96a_17.zip",
+  "device": "shennong",
+  "source_rom": "OS4.0.30.0.XEOCNXM / madrid (Xiaomi 18 Pro Max)",
+  "base_rom": "OS3.0.310.0.WNBCNXM / shennong (Xiaomi 14 Pro)",
+  "verified": "2026-11-16 复核 4.0.30 完美包：8 分区条目数与 4.0.29 基线完全一致，关键 SELinux 标签 / oat / rearscreen / 密度全部命中",
+  "partition_entry_counts": {
+    "system": 4793,
+    "system_ext": 3693,
+    "product": 2309,
+    "odm": 2321,
+    "vendor": 2968,
+    "mi_ext": 147,
+    "vendor_dlkm": 328,
+    "system_dlkm": 186
+  },
+  "critical_selabels": {
+    "/system/etc/selinux/mapping/30.0.cil": "u:object_r:sepolicy_file:s0",
+    "/system/etc/selinux/mapping/30.0.compat.cil": "u:object_r:sepolicy_file:s0",
+    "/system/bin/bugreporter": "u:object_r:shell_exec:s0"
+  },
+  "system_ext_min_miui_services_oat": 15,
+  "product_forbidden_dirs": [
+    "media/rearscreen"
+  ],
+  "product_max_counts": {
+    "precust_theme": 220,
+    "subscreencenter": 6,
+    "overlay": 105
+  },
+  "density": {
+    "ro.sf.lcd_density": "560",
+    "persist.miui.density_v2": "560"
+  },
+  "vibrator_instances": {
+    "perfect": [
+      "IVibrator/vibratorfeature"
+    ],
+    "project_min": 1,
+    "project_preferred": 2
+  },
+  "services_odex_required": false,
+  "max_unlabeled_critical_files": 0,
+  "notes": "V5 已验证包同样满足本基线（除振动为双实例、product 更精简）。services.odex 完美包也没有，非必需。 计数口径：仅 .odex/.vdex/.art 本体（不含 .fsv_meta），完美包 17 / V5 19 / 全新构建 0。"
+}

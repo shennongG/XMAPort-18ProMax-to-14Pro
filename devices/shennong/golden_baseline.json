@@ -1,0 +1,233 @@
+{
+  "description": "4.0.27 基线组合 (shennong) 真机验证进桌面",
+  "source_zip": "shennong-baseline-OS4.0.27.zip",
+  "verified": "2026-11-06 真机正常进入桌面，待机无发热",
+  "device": "shennong",
+  "super": {
+    "size_bytes": 8321499136,
+    "metadata_version": "10.2",
+    "metadata_size": 1024,
+    "metadata_slots": 3,
+    "flags": [
+      "virtual_ab_device"
+    ],
+    "group": "qti_dynamic_partitions_a",
+    "partitions": [
+      {
+        "name": "mi_ext_a",
+        "group": "qti_dynamic_partitions_a",
+        "attributes": "none",
+        "size": 106156032
+      },
+      {
+        "name": "odm_a",
+        "group": "qti_dynamic_partitions_a",
+        "attributes": "none",
+        "size": 2306396160
+      },
+      {
+        "name": "vendor_a",
+        "group": "qti_dynamic_partitions_a",
+        "attributes": "none",
+        "size": 469028864
+      },
+      {
+        "name": "vendor_dlkm_a",
+        "group": "qti_dynamic_partitions_a",
+        "attributes": "none",
+        "size": 30826496
+      },
+      {
+        "name": "system_a",
+        "group": "qti_dynamic_partitions_a",
+        "attributes": "none",
+        "size": 952791040
+      },
+      {
+        "name": "system_dlkm_a",
+        "group": "qti_dynamic_partitions_a",
+        "attributes": "none",
+        "size": 14934016
+      },
+      {
+        "name": "product_a",
+        "group": "qti_dynamic_partitions_a",
+        "attributes": "none",
+        "size": 2985406464
+      },
+      {
+        "name": "system_ext_a",
+        "group": "qti_dynamic_partitions_a",
+        "attributes": "none",
+        "size": 911077376
+      }
+    ],
+    "metadata_max_size": 65536
+  },
+  "images": {
+    "mi_ext_a.img": {
+      "size": 106156032,
+      "md5": "65362106570651602cad8f2d40648397"
+    },
+    "odm_a.img": {
+      "size": 2306396160,
+      "md5": null
+    },
+    "product_a.img": {
+      "size": 2985406464,
+      "md5": null
+    },
+    "super.img": {
+      "size": 8321499136,
+      "md5": null
+    },
+    "system_a.img": {
+      "size": 952791040,
+      "md5": null
+    },
+    "system_dlkm_a.img": {
+      "size": 14934016,
+      "md5": "7b9a330d7e52d38657777210a34d2837"
+    },
+    "system_ext_a.img": {
+      "size": 911077376,
+      "md5": null
+    },
+    "vendor_a.img": {
+      "size": 469028864,
+      "md5": "e9b697c9b589f06f611797726ba03e65"
+    },
+    "vendor_dlkm_a.img": {
+      "size": 30826496,
+      "md5": "691dc8712a223162bb50d9942988bf5f"
+    },
+    "firmware/abl.img": {
+      "size": 307200,
+      "md5": "bb320b9d5f94c8458f1ed39448cba581"
+    },
+    "firmware/aop.img": {
+      "size": 335872,
+      "md5": "55512f73a7de8d89fb610429a323667c"
+    },
+    "firmware/aop_config.img": {
+      "size": 28672,
+      "md5": "64e80a464f051f0bea29854fff5512b2"
+    },
+    "firmware/bluetooth.img": {
+      "size": 1470464,
+      "md5": "d4ed83670e11f429ae774e9ac632630d"
+    },
+    "firmware/boot.img": {
+      "size": 100663296,
+      "md5": "ec19573185c9d9af50621c527a6163b0"
+    },
+    "firmware/cpucp.img": {
+      "size": 253952,
+      "md5": "44c45f92d831d4fe893e2d77cd5b41a5"
+    },
+    "firmware/cpucp_dtb.img": {
+      "size": 16384,
+      "md5": "d6386575d2d15bf758aea9b63a6e782a"
+    },
+    "firmware/devcfg.img": {
+      "size": 61440,
+      "md5": "ef7a457dbc648e70b09a28259b17fcb0"
+    },
+    "firmware/dsp.img": {
+      "size": 67108864,
+      "md5": "300157d23624632c67106a65c2e53821"
+    },
+    "firmware/dtbo.img": {
+      "size": 20971520,
+      "md5": "22bfabff9924110b22c57b05bd8b27b0"
+    },
+    "firmware/featenabler.img": {
+      "size": 106496,
+      "md5": "f00c0fce512bdbba0f67e87b890f2a1a"
+    },
+    "firmware/hyp.img": {
+      "size": 1511424,
+      "md5": "c5a79581d3cdd1c1190846d3fe9f773a"
+    },
+    "firmware/imagefv.img": {
+      "size": 6299648,
+      "md5": "a2a09f7e8612fb3647f283f59d9bb36c"
+    },
+    "firmware/init_boot_official.img": {
+      "size": 8388608,
+      "md5": "8f9eca57c23309691fa660702614a58e"
+    },
+    "firmware/keymaster.img": {
+      "size": 442368,
+      "md5": "9dbb7007605c220f99cf5404a9a46746"
+    },
+    "firmware/modem.img": {
+      "size": 130019328,
+      "md5": "b45e5be885ead05b797cf46b2e3b629d"
+    },
+    "firmware/modemfirmware.img": {
+      "size": 237260800,
+      "md5": "8c1fa1400d63111b5a37d7a658762c34"
+    },
+    "firmware/multiimgqti.img": {
+      "size": 12288,
+      "md5": "0057d3c712073c8abd0c245a7529c8de"
+    },
+    "firmware/qupfw.img": {
+      "size": 61440,
+      "md5": "e282d1fa521289377262c6be5383ae09"
+    },
+    "firmware/recovery.img": {
+      "size": 104857600,
+      "md5": "a514d515002c79f3ab07dbc6e34432b7"
+    },
+    "firmware/shrm.img": {
+      "size": 139264,
+      "md5": "68ad44befa7f3dfbc075dbc2e46c0962"
+    },
+    "firmware/spuservice.img": {
+      "size": 98304,
+      "md5": "9b7559b116f709bcf2c32247ccdc7ab3"
+    },
+    "firmware/tz.img": {
+      "size": 4141056,
+      "md5": "06e91a9cf61c0360be6ca0903df25410"
+    },
+    "firmware/uefi.img": {
+      "size": 2949120,
+      "md5": "b2ca1c002c55d4ebd7e071448be93f89"
+    },
+    "firmware/uefisecapp.img": {
+      "size": 200704,
+      "md5": "daa736302a0f8440a5f17d9a0ba2bc4b"
+    },
+    "firmware/vbmeta.img": {
+      "size": 8192,
+      "md5": "fa57353edce278edf2eabfdea2aa26af"
+    },
+    "firmware/vbmeta_system.img": {
+      "size": 4096,
+      "md5": "07d552a2e411b40bbe5be404262ba620"
+    },
+    "firmware/vendor_boot.img": {
+      "size": 100663296,
+      "md5": "3262ee37bdb00aea6547daa8e31b821e"
+    },
+    "firmware/vm-bootsys.img": {
+      "size": 20971520,
+      "md5": "e0c59365c462c0d1ab717a3b755e51de"
+    },
+    "firmware/xbl.img": {
+      "size": 1118208,
+      "md5": "eff49ba0747f35e2620592e4abd0750c"
+    },
+    "firmware/xbl_config.img": {
+      "size": 225280,
+      "md5": "f31cce047bc15d3a19695db9d602d51b"
+    },
+    "firmware/xbl_ramdump.img": {
+      "size": 950272,
+      "md5": "92ca501b8a243385a99b9f34732258be"
+    }
+  }
+}

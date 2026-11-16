@@ -1,0 +1,168 @@
+name: Build 18ProMax-to-14Pro
+
+# 仅手动触发：出包时 Actions -> Build 18ProMax-to-14Pro -> Run workflow，device 固定 shennong。
+# 源包 = 小米 18 Pro Max (madrid)，底包 = 小米 14 Pro (shennong)。
+on:
+  workflow_dispatch:
+    inputs:
+      device:
+        description: '目标设备代号 (本项目固定 shennong)'
+        required: true
+        type: string
+        default: shennong
+      source:
+        description: '源 ROM 直链（madrid / 18 Pro Max，留空用 config.ini 的 OS4.0.29）'
+        required: false
+        type: string
+      target:
+        description: '底包 ROM 直链（shennong / 14 Pro，留空用 config.ini 的 OS3.0.310）'
+        required: false
+        type: string
+      shallow:
+        description: '打包前执行精简阶段 Step 6（含完美包基线对齐）'
+        required: false
+        type: boolean
+        default: true
+      slim_only:
+        description: '只跑精简阶段（已有 workspace 时使用）'
+        required: false
+        type: boolean
+        default: false
+      allow_api_mismatch:
+        description: '源 Android 17 / 底包 Android 16 跨大版本时仍继续'
+        required: false
+        type: boolean
+        default: true
+      base_first:
+        description: '实验性：以 310 底包为骨架 + 4.0.x 增量（见 docs/shennong/base-first-mode.md）'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  porting:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    # 13GB 级旗舰 ROM 全流程（下载+解包+迁移+精简+打包）远超 2 小时，放宽到 5 小时
+    timeout-minutes: 300
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Free disk space
+        shell: pwsh
+        run: |
+          Get-PSDrive -PSProvider FileSystem | Format-Table Name,@{n='FreeGB';e={[math]::Round($_.Free/1GB,1)}}
+          $junk = @(
+            "$env:ANDROID_HOME", "$env:ANDROID_SDK_ROOT",
+            "C:\Program Files (x86)\Android",
+            "C:\Program Files\dotnet",
+            "C:\Program Files (x86)\Microsoft Visual Studio\Installer",
+            "C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk",
+            "$env:LOCALAPPDATA\Google\Chrome",
+            "$env:LOCALAPPDATA\Microsoft\Edge"
+          )
+          foreach ($p in $junk) {
+            if ($p -and (Test-Path $p)) {
+              try { Remove-Item -Recurse -Force $p -ErrorAction Stop; Write-Host "removed $p" }
+              catch { Write-Host "skip $p : $($_.Exception.Message)" }
+            }
+          }
+          Write-Host "after cleanup:"
+          Get-PSDrive -PSProvider FileSystem | Format-Table Name,@{n='FreeGB';e={[math]::Round($_.Free/1GB,1)}}
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install Brotli
+        shell: pwsh
+        run: pip install Brotli
+
+      - name: Apply cross-version policy
+        shell: pwsh
+        if: inputs.allow_api_mismatch == false
+        run: |
+          python tools/config_codec.py config.ini set allow_api_mismatch=false
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: Apply packing overrides
+        shell: pwsh
+        run: |
+          # 云端必须出 super.img（config.ini 默认 pack_super=false 留给本地菜单合成）
+          python tools/config_codec.py config.ini check
+          python tools/config_codec.py config.ini set pack_super=true
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          python tools/config_codec.py config.ini get pack_super
+          if ("${{ inputs.base_first }}" -eq "true") {
+            python tools/config_codec.py config.ini set base_first=true
+            if ($LASTEXITCODE -ne 0) { exit 1 }
+          }
+          python tools/config_codec.py config.ini get base_first
+
+      - name: Run port pipeline
+        shell: pwsh
+        run: |
+          $args = @("--auto", "--device", "${{ inputs.device }}")
+          if ("${{ inputs.source }}") { $args += "--source"; $args += "${{ inputs.source }}" }
+          if ("${{ inputs.target }}") { $args += "--target"; $args += "${{ inputs.target }}" }
+          if ("${{ inputs.shallow }}" -ne "true") { $args += "--skip-shallow" }
+          if ("${{ inputs.slim_only }}" -eq "true") { $args += "--slim-only" }
+          python XMAPort.py @args
+
+      - name: Verify against perfect baseline
+        shell: pwsh
+        if: inputs.slim_only != true
+        run: |
+          python tools/verify_perfect_baseline.py --tree workspace/source_filesystem --device ${{ inputs.device }}
+          if ($LASTEXITCODE -ne 0) { Write-Error "内容基线校验失败 - 见 docs/shennong/perfect-baseline.md"; exit 1 }
+
+      - name: Pack/split output
+        shell: pwsh
+        if: inputs.slim_only != true
+        run: |
+          if (-not (Test-Path workspace\packed\super.img)) { Write-Error "super.img not found"; exit 1 }
+          .\tools\7z.exe a -t7z -mx=5 -v1900m workspace\super-${{ inputs.device }}.7z workspace\packed\super.img
+          if ($LASTEXITCODE -ne 0) { Write-Error "7z failed (exit $LASTEXITCODE)"; exit 1 }
+
+      - name: Split flash pack for release
+        shell: pwsh
+        if: inputs.slim_only != true
+        run: |
+          $fp = Get-ChildItem "workspace\flashpack\XMAPort_*.zip" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($fp) {
+            Write-Host "Flash pack: $($fp.Name) ($([math]::Round($fp.Length/1GB,2)) GB)"
+            .\tools\7z.exe a -t7z -mx=1 -v1900m "workspace\flashpack-${{ inputs.device }}.7z" $fp.FullName
+            if ($LASTEXITCODE -ne 0) { Write-Error "7z flashpack split failed"; exit 1 }
+          } else {
+            Write-Warning "No flash pack found (build_flashpack may be disabled or failed) - skipping"
+          }
+
+      - name: Upload to Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $date = Get-Date -Format "MMdd"
+          $n = 1
+          $prefix = "Port18Max14Pro-${{ inputs.device }}-$date"
+          while (gh release view "$prefix-$n" 2>$null) { $n++ }
+          $tag = "$prefix-$n"
+
+          $volFiles = @(Get-ChildItem "workspace\super-${{ inputs.device }}.7z.*" | ForEach-Object { $_.FullName })
+          if (-not $volFiles) { Write-Error "no split volumes found"; exit 1 }
+          $fpFiles = @(Get-ChildItem "workspace\flashpack-${{ inputs.device }}.7z.*" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })
+          $logFiles = @(Get-ChildItem "workspace\*.log" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })
+          $allFiles = $volFiles + $fpFiles + $logFiles
+
+          $romInfo = @("ROM Info:")
+          if (Test-Path workspace\rom_info.txt) {
+            $romInfo += Get-Content workspace\rom_info.txt -Encoding UTF8 | Where-Object { $_ -match '^\S+:\s*\S+' }
+          } else {
+            $romInfo += "device: ${{ inputs.device }}"
+          }
+          $notes = "小米 18 Pro Max -> 14 Pro 移植输出（分卷 7z，每卷 <=2GB）。`n`n" + ($romInfo -join "`n") + "`n`n合并解压：`n7z x super-${{ inputs.device }}.7z.001`n7z x flashpack-${{ inputs.device }}.7z.001`n`nflashpack = 线刷+卡刷一体包（解压出 XMAPort_*.zip 后完整解压，线刷跑 XMAPort-Flash.bat，卡刷进 recovery sideload 该 zip）"
+
+          gh release create $tag $allFiles --title "18ProMax->14Pro ${{ inputs.device }} $date #$n" --notes $notes --latest
