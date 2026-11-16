@@ -5,3 +5,4 @@ __pycache__/
 release/
 *.7z
 *.7z.*
+devices/*/recovery_twrp.img.zst

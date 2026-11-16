@@ -1733,7 +1733,7 @@ def patch_vbmeta(pack_cfg):
       实测：仅替换 vbmeta 后，我们自己的 boot 链即可正常进 recovery。
     """
     if pack_cfg.get("patch_vbmeta", "true").lower() != "true":
-        return
+        return True
     log_write("Applying blank disabled vbmeta (AVB verification off)")
     info("Applying blank disabled vbmeta (unsigned, flags=3)...")
     count = 0
@@ -1748,7 +1748,7 @@ def patch_vbmeta(pack_cfg):
     if count == 0:
         err("No vbmeta*.img found in target payload")
         log_write("WARNING: no vbmeta*.img in target_payload, skip")
-        return
+        return True
 
     blank_dir = ROOT / "tools" / "assets"
     mapping = {"vbmeta.img": "vbmeta_disabled.img",
@@ -1769,19 +1769,17 @@ def patch_vbmeta(pack_cfg):
         if algo != 0 or flags != 3:
             err("vbmeta.img 不是空白禁用镜像 (algo={}, flags={})，该包会无法开机！".format(algo, flags))
             log_write("ERROR: vbmeta.img invalid (algo={}, flags={})".format(algo, flags))
-        else:
-            ok("vbmeta 校验通过: 未签名 + flags=3")
-        return
+            return False
+        ok("vbmeta 校验通过: 未签名 + flags=3")
+        return True
 
-    # 资产缺失时保留旧行为，但明确告警（该路径未验证）
-    warn("未找到空白 vbmeta 资产，回退到字节补丁（可能破坏 AVB 签名导致无法开机）")
-    log_write("WARNING: falling back to vbmeta_patch.py (unverified)")
-    rc = subprocess.run([PY, str(TOOLS / "vbmeta_patch.py"), str(PACK_OUT)]).returncode
-    if rc != 0:
-        err("vbmeta patch reported errors")
-        log_write("WARNING: vbmeta_patch.py reported errors")
-    else:
-        log_write("vbmeta byte-patch done (fallback)")
+    # 2026-11-16: 资产缺失不再回退字节补丁。字节补丁只能改 flags，algo 仍是 1
+    # （签名状态），ABL 校验失败会直接回落 fastboot；build_flashpack 也会因此
+    # 拒绝出包（本次 CI 实测：super 发布成功但 flashpack 缺失）。改为硬失败。
+    err("缺少 tools/assets/vbmeta_disabled.img 与 vbmeta_system_disabled.img")
+    err("空白禁用 vbmeta 是开机的必要条件，不再回退到不安全的字节补丁")
+    log_write("ERROR: vbmeta assets missing (tools/assets/vbmeta*_disabled.img)")
+    return False
 
 
 def _lp_slot_suffix(pack_cfg):
@@ -2570,13 +2568,15 @@ def one_click_port(auto=False):
             pass
 
     # vbmeta 禁验（在 super 打包之后、汇总之前，不受 pack_super 限制）
-    patch_vbmeta(pack_cfg)
+    if not patch_vbmeta(pack_cfg):
+        port_failed = True
 
     # ---------------- Step 7.5: 线刷+卡刷一体包 ----------------
     # 先回收空间: super.img 已合并全部动态分区, 一体包只需要固件类镜像。
     # 不回收的话 simg2img 转 raw super 时会磁盘爆满(上次 CI 实测)。
     clean_pre_flashpack_imgs()
     disk_report("before flashpack")
+    flashpack_failed = False
     if pack_cfg.get("build_flashpack", "true").lower() == "true" \
             and (PACK_OUT / "super.img").exists():
         info("=== Building fastboot+recovery flash pack ===")
@@ -2585,15 +2585,19 @@ def one_click_port(auto=False):
             ok("Flash pack ready: workspace/flashpack/")
             log_write("Flash pack built OK")
         else:
-            warn("flashpack build failed (non-fatal), super.img still usable")
-            log_write("WARNING: flashpack build failed")
+            # 2026-11-16: 本项目核心交付物就是「线卡一体包」，flashpack 失败
+            # 不能只 warn 后继续 —— 那样 CI 会显示成功却只发布 super 分卷，
+            # 用户拿不到刷机脚本（实机踩过）。改为硬失败，让流水线红。
+            flashpack_failed = True
+            err("flashpack build FAILED (line-card one-package is required)")
+            log_write("ERROR: flashpack build failed")
 
     # 打包完成，*_payload 下的分区镜像已复制/重打包进 packed，删除释放空间
     clean_unpacked_imgs()
     disk_report("after Step 7")
 
     # ---------------- Step 8: 汇总 ----------------
-    port_ok = (not port_failed) and counters["pack_fail"] == 0
+    port_ok = (not port_failed) and counters["pack_fail"] == 0 and not flashpack_failed
     log_write("========== Porting {} ==========".format(
         "Complete" if port_ok else "Finished With Errors"))
     log_write("Total packed: {} partitions, {} failed".format(counters["pack_ok"], counters["pack_fail"]))

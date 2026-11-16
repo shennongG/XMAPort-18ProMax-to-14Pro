@@ -132,13 +132,15 @@ jobs:
         if: inputs.slim_only != true
         run: |
           $fp = Get-ChildItem "workspace\flashpack\XMAPort_*.zip" -ErrorAction SilentlyContinue | Select-Object -First 1
-          if ($fp) {
-            Write-Host "Flash pack: $($fp.Name) ($([math]::Round($fp.Length/1GB,2)) GB)"
-            .\tools\7z.exe a -t7z -mx=1 -v1900m "workspace\flashpack-${{ inputs.device }}.7z" $fp.FullName
-            if ($LASTEXITCODE -ne 0) { Write-Error "7z flashpack split failed"; exit 1 }
-          } else {
-            Write-Warning "No flash pack found (build_flashpack may be disabled or failed) - skipping"
+          if (-not $fp) {
+            # 本项目交付物就是「线卡一体包」；缺失时不能静默跳过，
+            # 否则 Release 只有 super 分卷、用户没有刷机脚本（2026-11-16 踩过）。
+            Write-Error "No flash pack found - build_flashpack failed. Refusing to publish a partial release."
+            exit 1
           }
+          Write-Host "Flash pack: $($fp.Name) ($([math]::Round($fp.Length/1GB,2)) GB)"
+          .\tools\7z.exe a -t7z -mx=1 -v1900m "workspace\flashpack-${{ inputs.device }}.7z" $fp.FullName
+          if ($LASTEXITCODE -ne 0) { Write-Error "7z flashpack split failed"; exit 1 }
 
       - name: Upload to Release
         shell: pwsh
