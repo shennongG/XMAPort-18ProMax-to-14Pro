@@ -106,6 +106,35 @@ docs/shennong/                   移植说明与基线文档
 .github/workflows/build.yml      云端构建
 ```
 
+## 线卡一体包（fastboot + recovery）
+
+打包阶段由 `build_flashpack.py` 生成一个 zip，同时支持两种刷法：
+
+- **线刷**：解压后运行 `XMAPort-Flash.bat`，fastboot 刷入全部固件 + `super.img`
+- **卡刷**：进第三方 Recovery（TWRP）sideload 同一 zip，由 `META-INF/com/google/android/update-binary` 安装
+
+刷机脚本脱胎于 X-MiPort 的线刷脚本，**已去除原作者信息**，并固定刷入**第三方 TWRP**（不会刷回官方 Recovery）。脚本提供：
+
+| 脚本 | 用途 |
+| --- | --- |
+| `XMAPort-Flash.bat` | 主线刷：机型校验 → ROOT 方式选择 → 固件/`super`/`boot` 全刷 → 可选清数据 → 重启进 TWRP |
+| `2-Force-TWRP.bat` | 救砖：只双槽刷 TWRP 并进 TWRP 重建 `/data`，无需重刷 8 GB super |
+| `3-Format-Data.bat` | 单独在 TWRP 里 `format data` |
+
+### 打包所需资源（已随仓库提供）
+
+| 路径 | 来源 | 用途 |
+| --- | --- | --- |
+| `tools/flashtools/Windows/` | 从完美包提取的 adb / fastboot / zstd / cecho / cut / awk 等 | 线刷工具，构建时复制到 `bin/Windows/` |
+| `tools/flashtools/android/` | 完美包里的 `zstd` / `7zzs` | 卡刷 `update-binary` 在 Recovery 内解压 super 用 |
+| `devices/shennong/recovery_twrp.img.zst.part*` | 从完美包提取的第三方 TWRP，3 个分片共 42 MB（100 MB 镜像经 zstd -19 压缩后切分，规避 GitHub 单文件与 API blob 双重限制） | 出包时 `prepare_twrp()` 先按序拼回 `.zst` 再解压成 `images/recovery_twrp.img`，由线刷脚本强制刷入 |
+| `devices/shennong/root/init_boot_*.img` | 完美包里的 6 个 ROOT 变体（8 MB 各） | 对应线刷脚本 ROOT 菜单：无 ROOT / Magisk / KernelSU / SukiSU-Ultra / KernelSU-Next / Kitsune Mask |
+
+> 若更换底包机型，需为该机型重新提供 TWRP（单个 `.img.zst` 或其 `.part*` 分片）与对应 `flashtools`；缺失 TWRP 时脚本会**拒绝出包**（主线强制第三方 RE）。
+> ROOT 菜单里 APatch / FolkPatch 需要 `devices/<device>/root/boot_apatch.img` / `boot_folkpatch.img`（各 96 MB，未随仓库分发）；缺失时脚本会提示"不可用，请重选"，不影响其它 ROOT 方式。
+
+`config.ini` 里 `build_flashpack=true` 即开启；CI 构建后会自动把 flashpack 分卷发布到 Release。
+
 ## 内容基线（关键）
 
 出包后 CI 自动校验以下可开机特征（详见 [perfect-baseline.md](docs/shennong/perfect-baseline.md)）：

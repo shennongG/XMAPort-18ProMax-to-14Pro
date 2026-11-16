@@ -319,23 +319,40 @@ def find_zstd(staging):
 def prepare_twrp(staging, device):
     """把第三方 TWRP 放进 images/recovery_twrp.img。
 
-    GitHub 单文件 100 MB 限制：devices/<device>/recovery_twrp.img 以
-    .img.zst 归档（约 47 MB），出包时解压回原始 boot 镜像。
+    原始 TWRP 是 100 MB 的 Android boot 镜像。为了同时避开「GitHub 单文件
+    100 MB 限制」和「Git Data API blob 大小限制」，仓库里以两种形式之一存放：
+      1. devices/<device>/recovery_twrp.img.zst    —— 单个 zstd 压缩包 (~42 MB)
+      2. devices/<device>/recovery_twrp.img.zst.part* —— 上面压缩包的分片 (每片 <=15 MB)
+    出包时先按 part 顺序拼回 .zst（若存在分片），再 zstd 解压回原始镜像。
     主线刷模板**强制**刷入 TWRP，缺失即拒绝出包。
     """
     dst = staging / "images" / "recovery_twrp.img"
     if dst.is_file():
         return True
     dev = DEVICES_DIR / device if device else None
-    src = dev / "recovery_twrp.img" if dev else None
-    if src and src.is_file():
+    if not dev:
+        err("缺少机型目录，无法确定 TWRP 位置")
+        return False
+    src = dev / "recovery_twrp.img"
+    if src.is_file():
         shutil.copy2(src, dst)
         ok("TWRP: devices/{}/recovery_twrp.img".format(device))
         return True
-    zst = dev / "recovery_twrp.img.zst" if dev else None
-    if not (zst and zst.is_file()):
-        err("缺少 devices/{}/recovery_twrp.img(.zst) —— 线刷模板强制刷入 TWRP，拒绝出包".format(device))
-        return False
+
+    zst = dev / "recovery_twrp.img.zst"
+    if not zst.is_file():
+        # 分片重组：recovery_twrp.img.zst.partaa / .partab / .partac ...
+        parts = sorted(dev.glob("recovery_twrp.img.zst.part*"))
+        if not parts:
+            err("缺少 devices/{}/recovery_twrp.img(.zst|.zst.part*) —— 线刷模板强制刷入 TWRP，拒绝出包".format(device))
+            return False
+        info("重组 TWRP 分片 ({} 片) ...".format(len(parts)))
+        with open(zst, "wb") as out:
+            for part in parts:
+                with open(part, "rb") as fh:
+                    shutil.copyfileobj(fh, out)
+        ok("TWRP 分片重组完成 ({:.1f} MB)".format(zst.stat().st_size / 1048576))
+
     zstd = find_zstd(staging)
     if not zstd:
         err("找不到 zstd，无法解压 TWRP 镜像")
