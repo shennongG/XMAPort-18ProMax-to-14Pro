@@ -1,96 +1,134 @@
 # XMAPort 完美包补入清单（shennong / 18 Pro Max -> 14 Pro）
 #
-# 2026-11-21 实测定性：X-MiPort 4.0.29 完美包（真机可开机）的 product 不是
-# 「只裁剪源包」，而是 源包 2533 - 删 363 + 补 139。补入的是 14 Pro（底包
-# 310）原生、madrid 4.0.29 没有的系统应用（WMService / UPTsmService /
-# pangu NQNfcNci / app/system 等），本仓库此前的产物只删不补，真机卡
-# HyperOS 二屏。
+# 2026-11-21 逐文件实测定性：X-MiPort 4.0.29 完美包（真机可开机）不是
+# 「只裁剪源包」，而是：
+#   product     源包 2533 - 删 363 + 补 139 = 2309
+#   system_ext  源包 3661 + 补 34（miui-services oat）= 3695
+# 补入项全部是 14 Pro 底包（310）原生、madrid 4.0.x 没有的系统文件：
+#   WMService / UPTsmService / app/system/system.apk / pangu NQNfcNci /
+#   talkback / AutoRegistration / system_ext miui-services 预编译 oat
+# 此前本项目只删不补，产物缺这些服务，真机反复卡 HyperOS 二屏、机身不热。
 #
-# 这些文件直接取自底包（config.ini [target] 下载的 shennong 310），
-# 不随仓库分发，避免 175 MB 相机等大文件进 git。
+# 文件取自 config.ini [target] 下载的底包，不随仓库分发
+# （相机 apk 175 MB 等大文件会超 GitHub 单文件限制）。
 #
-# 格式：分区内相对路径，一行一条，相对 <product 内容根>。
-# 底包缺失的条目由 align_perfect_product 汇总告警，CI 会用文件数复核。
+# 格式：<分区>/<分区内相对路径>，一行一条。
+# 底包缺失的条目会汇总告警；CI 用 perfect_baseline.json 的
+# product_required_dirs 与 system_ext_min_miui_services_oat 硬校验。
 
-app/AnalyticsCore/AnalyticsCore.apk
-app/CarWith/CarWith.apk
-app/CatchLog/CatchLog.apk
-app/CatchLog/oat/arm64/CatchLog.odex
-app/CatchLog/oat/arm64/CatchLog.vdex
-app/GoogleLocationHistory/GoogleLocationHistory.apk
-app/GoogleLocationHistory/oat/arm64/GoogleLocationHistory.odex
-app/GoogleLocationHistory/oat/arm64/GoogleLocationHistory.vdex
-app/HybridPlatform/HybridPlatform.apk
-app/LyraSdkSpp/oat/arm/LyraSdkSpp.odex
-app/LyraSdkSpp/oat/arm/LyraSdkSpp.vdex
-app/MIUIReporter/MIUIReporter.apk
-app/MIUIgreenguard/MIUIgreenguard.apk
-app/MIUIgreenguard/oat/arm64/MIUIgreenguard.odex
-app/MIUIgreenguard/oat/arm64/MIUIgreenguard.vdex
-app/MSA/oat/arm64/MSA.odex
-app/MSA/oat/arm64/MSA.vdex
-app/MiAONServiceV2/MiAONServiceV2.apk
-app/PaymentService/PaymentService.apk
-app/RideModeAudio/RideModeAudio.apk
-app/RideModeAudio/oat/arm64/RideModeAudio.odex
-app/RideModeAudio/oat/arm64/RideModeAudio.vdex
-app/SwitchAccess/SwitchAccess.apk
-app/SwitchAccess/oat/arm64/SwitchAccess.odex
-app/SwitchAccess/oat/arm64/SwitchAccess.vdex
-app/UPTsmService/UPTsmService.apk
-app/UPTsmService/lib/arm64/libDeepNetV2.so
-app/UPTsmService/lib/arm64/libcwlive.so
-app/UPTsmService/lib/arm64/libenlic.so
-app/UPTsmService/lib/arm64/libentryexpro.so
-app/UPTsmService/lib/arm64/libupbio_net.so
-app/UPTsmService/lib/arm64/libupliveness.so
-app/UPTsmService/lib/arm64/libuptsmaddonmi.so
-app/UPTsmService/lib/arm64/libuptsmservice.so
-app/UPTsmService/lib/arm64/libxdjacrypto.so
-app/WMService/WMService.apk
-app/WMService/oat/arm64/WMService.odex
-app/WMService/oat/arm64/WMService.vdex
-app/com.xiaomi.ugd/com.xiaomi.ugd.apk
-app/remoteSimLockAuthentication/remoteSimLockAuthentication.apk
-app/remotesimlockservice/oat/arm64/remotesimlockservice.odex
-app/remotesimlockservice/oat/arm64/remotesimlockservice.vdex
-app/remotesimlockservice/remotesimlockservice.apk
-app/system/system.apk
-app/talkback/oat/arm64/talkback.odex
-app/talkback/oat/arm64/talkback.vdex
-app/talkback/talkback.apk
-pangu/system/app/NQNfcNci/NQNfcNci.apk
-pangu/system/app/NQNfcNci/oat/arm64/NQNfcNci.odex
-pangu/system/app/NQNfcNci/oat/arm64/NQNfcNci.vdex
-priv-app/AutoRegistration/AutoRegistration.apk
-priv-app/AutoRegistration/oat/arm64/AutoRegistration.odex
-priv-app/AutoRegistration/oat/arm64/AutoRegistration.vdex
-priv-app/ConfigUpdater/ConfigUpdater.apk
-priv-app/ConfigUpdater/oat/arm64/ConfigUpdater.odex
-priv-app/ConfigUpdater/oat/arm64/ConfigUpdater.vdex
-priv-app/MiGameCenterSDKService/MiGameCenterSDKService.apk
-priv-app/MiGameCenterSDKService/lib/arm64/libYTCommonLiveness.so
-priv-app/MiGameCenterSDKService/lib/arm64/libbytehook.so
-priv-app/MiGameCenterSDKService/lib/arm64/libc++_shared.so
-priv-app/MiGameCenterSDKService/lib/arm64/libentryexpro.so
-priv-app/MiGameCenterSDKService/lib/arm64/libkoom-java.so
-priv-app/MiGameCenterSDKService/lib/arm64/libkwai-android-base.so
-priv-app/MiGameCenterSDKService/lib/arm64/libkyctoolkit.so
-priv-app/MiGameCenterSDKService/lib/arm64/libmicrash.so
-priv-app/MiGameCenterSDKService/lib/arm64/libmicrash_dumper.so
-priv-app/MiGameCenterSDKService/lib/arm64/libmistr.so
-priv-app/MiGameCenterSDKService/lib/arm64/libshadowhook.so
-priv-app/MiGameCenterSDKService/lib/arm64/libshadowhook_nothing.so
-priv-app/MiGameCenterSDKService/lib/arm64/libsmsdk.so
-priv-app/MiGameCenterSDKService/lib/arm64/libturingmfa.so
-priv-app/MiGameCenterSDKService/lib/arm64/libuptsmaddon.so
-priv-app/MiGameCenterSDKService/lib/arm64/libweconvert.so
-priv-app/MiGameCenterSDKService/lib/arm64/libweyuv.so
-priv-app/MiGameCenterSDKService/lib/arm64/libxcrash.so
-priv-app/MiGameCenterSDKService/lib/arm64/libxcrash_dumper.so
-priv-app/MiGameCenterSDKService/lib/arm64/libxhook_lib.so
-priv-app/MiuiCamera/oat/arm64/MiuiCamera.odex
-priv-app/MiuiCamera/oat/arm64/MiuiCamera.vdex
-priv-app/RegService/RegService.apk
-priv-app/RegService/oat/arm64/RegService.odex
-priv-app/RegService/oat/arm64/RegService.vdex
+product/app/AnalyticsCore/AnalyticsCore.apk
+product/app/CarWith/CarWith.apk
+product/app/CatchLog/CatchLog.apk
+product/app/CatchLog/oat/arm64/CatchLog.odex
+product/app/CatchLog/oat/arm64/CatchLog.vdex
+product/app/GoogleLocationHistory/GoogleLocationHistory.apk
+product/app/GoogleLocationHistory/oat/arm64/GoogleLocationHistory.odex
+product/app/GoogleLocationHistory/oat/arm64/GoogleLocationHistory.vdex
+product/app/HybridPlatform/HybridPlatform.apk
+product/app/LyraSdkSpp/oat/arm/LyraSdkSpp.odex
+product/app/LyraSdkSpp/oat/arm/LyraSdkSpp.vdex
+product/app/MIUIReporter/MIUIReporter.apk
+product/app/MIUIgreenguard/MIUIgreenguard.apk
+product/app/MIUIgreenguard/oat/arm64/MIUIgreenguard.odex
+product/app/MIUIgreenguard/oat/arm64/MIUIgreenguard.vdex
+product/app/MSA/oat/arm64/MSA.odex
+product/app/MSA/oat/arm64/MSA.vdex
+product/app/MiAONServiceV2/MiAONServiceV2.apk
+product/app/PaymentService/PaymentService.apk
+product/app/RideModeAudio/RideModeAudio.apk
+product/app/RideModeAudio/oat/arm64/RideModeAudio.odex
+product/app/RideModeAudio/oat/arm64/RideModeAudio.vdex
+product/app/SwitchAccess/SwitchAccess.apk
+product/app/SwitchAccess/oat/arm64/SwitchAccess.odex
+product/app/SwitchAccess/oat/arm64/SwitchAccess.vdex
+product/app/UPTsmService/UPTsmService.apk
+product/app/UPTsmService/lib/arm64/libDeepNetV2.so
+product/app/UPTsmService/lib/arm64/libcwlive.so
+product/app/UPTsmService/lib/arm64/libenlic.so
+product/app/UPTsmService/lib/arm64/libentryexpro.so
+product/app/UPTsmService/lib/arm64/libupbio_net.so
+product/app/UPTsmService/lib/arm64/libupliveness.so
+product/app/UPTsmService/lib/arm64/libuptsmaddonmi.so
+product/app/UPTsmService/lib/arm64/libuptsmservice.so
+product/app/UPTsmService/lib/arm64/libxdjacrypto.so
+product/app/WMService/WMService.apk
+product/app/WMService/oat/arm64/WMService.odex
+product/app/WMService/oat/arm64/WMService.vdex
+product/app/com.xiaomi.ugd/com.xiaomi.ugd.apk
+product/app/remoteSimLockAuthentication/remoteSimLockAuthentication.apk
+product/app/remotesimlockservice/oat/arm64/remotesimlockservice.odex
+product/app/remotesimlockservice/oat/arm64/remotesimlockservice.vdex
+product/app/remotesimlockservice/remotesimlockservice.apk
+product/app/system/system.apk
+product/app/talkback/oat/arm64/talkback.odex
+product/app/talkback/oat/arm64/talkback.vdex
+product/app/talkback/talkback.apk
+product/pangu/system/app/NQNfcNci/NQNfcNci.apk
+product/pangu/system/app/NQNfcNci/oat/arm64/NQNfcNci.odex
+product/pangu/system/app/NQNfcNci/oat/arm64/NQNfcNci.vdex
+product/priv-app/AutoRegistration/AutoRegistration.apk
+product/priv-app/AutoRegistration/oat/arm64/AutoRegistration.odex
+product/priv-app/AutoRegistration/oat/arm64/AutoRegistration.vdex
+product/priv-app/ConfigUpdater/ConfigUpdater.apk
+product/priv-app/ConfigUpdater/oat/arm64/ConfigUpdater.odex
+product/priv-app/ConfigUpdater/oat/arm64/ConfigUpdater.vdex
+product/priv-app/MiGameCenterSDKService/MiGameCenterSDKService.apk
+product/priv-app/MiGameCenterSDKService/lib/arm64/libYTCommonLiveness.so
+product/priv-app/MiGameCenterSDKService/lib/arm64/libbytehook.so
+product/priv-app/MiGameCenterSDKService/lib/arm64/libc++_shared.so
+product/priv-app/MiGameCenterSDKService/lib/arm64/libentryexpro.so
+product/priv-app/MiGameCenterSDKService/lib/arm64/libkoom-java.so
+product/priv-app/MiGameCenterSDKService/lib/arm64/libkwai-android-base.so
+product/priv-app/MiGameCenterSDKService/lib/arm64/libkyctoolkit.so
+product/priv-app/MiGameCenterSDKService/lib/arm64/libmicrash.so
+product/priv-app/MiGameCenterSDKService/lib/arm64/libmicrash_dumper.so
+product/priv-app/MiGameCenterSDKService/lib/arm64/libmistr.so
+product/priv-app/MiGameCenterSDKService/lib/arm64/libshadowhook.so
+product/priv-app/MiGameCenterSDKService/lib/arm64/libshadowhook_nothing.so
+product/priv-app/MiGameCenterSDKService/lib/arm64/libsmsdk.so
+product/priv-app/MiGameCenterSDKService/lib/arm64/libturingmfa.so
+product/priv-app/MiGameCenterSDKService/lib/arm64/libuptsmaddon.so
+product/priv-app/MiGameCenterSDKService/lib/arm64/libweconvert.so
+product/priv-app/MiGameCenterSDKService/lib/arm64/libweyuv.so
+product/priv-app/MiGameCenterSDKService/lib/arm64/libxcrash.so
+product/priv-app/MiGameCenterSDKService/lib/arm64/libxcrash_dumper.so
+product/priv-app/MiGameCenterSDKService/lib/arm64/libxhook_lib.so
+product/priv-app/MiuiCamera/oat/arm64/MiuiCamera.odex
+product/priv-app/MiuiCamera/oat/arm64/MiuiCamera.vdex
+product/priv-app/RegService/RegService.apk
+product/priv-app/RegService/oat/arm64/RegService.odex
+product/priv-app/RegService/oat/arm64/RegService.vdex
+system_ext/framework/oat/arm/miui-services.autoui.odex
+system_ext/framework/oat/arm/miui-services.autoui.odex.fsv_meta
+system_ext/framework/oat/arm/miui-services.autoui.vdex
+system_ext/framework/oat/arm/miui-services.autoui.vdex.fsv_meta
+system_ext/framework/oat/arm/miui-services.hovermode.odex
+system_ext/framework/oat/arm/miui-services.hovermode.odex.fsv_meta
+system_ext/framework/oat/arm/miui-services.hovermode.vdex
+system_ext/framework/oat/arm/miui-services.hovermode.vdex.fsv_meta
+system_ext/framework/oat/arm/miui-services.hyperviewscale.odex
+system_ext/framework/oat/arm/miui-services.hyperviewscale.odex.fsv_meta
+system_ext/framework/oat/arm/miui-services.hyperviewscale.vdex
+system_ext/framework/oat/arm/miui-services.hyperviewscale.vdex.fsv_meta
+system_ext/framework/oat/arm/miui-services.thirdappopt.odex
+system_ext/framework/oat/arm/miui-services.thirdappopt.odex.fsv_meta
+system_ext/framework/oat/arm/miui-services.thirdappopt.vdex
+system_ext/framework/oat/arm/miui-services.thirdappopt.vdex.fsv_meta
+system_ext/framework/oat/arm64/miui-services.art
+system_ext/framework/oat/arm64/miui-services.art.fsv_meta
+system_ext/framework/oat/arm64/miui-services.autoui.odex
+system_ext/framework/oat/arm64/miui-services.autoui.odex.fsv_meta
+system_ext/framework/oat/arm64/miui-services.autoui.vdex
+system_ext/framework/oat/arm64/miui-services.autoui.vdex.fsv_meta
+system_ext/framework/oat/arm64/miui-services.hovermode.odex
+system_ext/framework/oat/arm64/miui-services.hovermode.odex.fsv_meta
+system_ext/framework/oat/arm64/miui-services.hovermode.vdex
+system_ext/framework/oat/arm64/miui-services.hovermode.vdex.fsv_meta
+system_ext/framework/oat/arm64/miui-services.hyperviewscale.odex
+system_ext/framework/oat/arm64/miui-services.hyperviewscale.odex.fsv_meta
+system_ext/framework/oat/arm64/miui-services.hyperviewscale.vdex
+system_ext/framework/oat/arm64/miui-services.hyperviewscale.vdex.fsv_meta
+system_ext/framework/oat/arm64/miui-services.thirdappopt.odex
+system_ext/framework/oat/arm64/miui-services.thirdappopt.odex.fsv_meta
+system_ext/framework/oat/arm64/miui-services.thirdappopt.vdex
+system_ext/framework/oat/arm64/miui-services.thirdappopt.vdex.fsv_meta
