@@ -771,6 +771,15 @@ def gen_update_binary(staging, device, model, port_ver, base_ver, sec_patch):
     has_twrp = (staging / "images" / "recovery_twrp.img").is_file()
     has_super = (staging / "images" / "super.img.zst").is_file()
 
+    # ZIP64 关键：super.img.zst 约 6.4 GB，超过 4 GB。Recovery 自带的 busybox/toybox
+    # unzip 多数不支持 ZIP64，会静默截断或直接报错。随包的 7zzs 支持 ZIP64，
+    # 与完美包（X-MiPort）做法一致；只有 7zzs 缺失时才退回 unzip。
+    has_7zzs = (staging / "bin" / "android" / "7zzs").is_file()
+    extract_one = ('/tmp/bin/android/7zzs e -so "$ZIPFILE"' if has_7zzs
+                   else 'unzip -p "$ZIPFILE"')
+    if not has_7zzs:
+        warn("bin/android/7zzs 缺失 —— 卡刷将退回 unzip，6.4 GB super 在部分 Recovery 会因 ZIP64 失败")
+
     L = []
     a = L.append
     a("#!/sbin/sh")
@@ -784,13 +793,13 @@ def gen_update_binary(staging, device, model, port_ver, base_ver, sec_patch):
     a("extract_flash() {")
     a("    # $1=zip内镜像路径  $2=分区名 (自动刷 _a / _b 双槽)")
     a('    ui_print "- $(basename $1) -> $2 (a/b)"')
-    a('    unzip -p "$ZIPFILE" "$1" >/dev/block/bootdevice/by-name/${2}_a')
-    a('    unzip -p "$ZIPFILE" "$1" >/dev/block/bootdevice/by-name/${2}_b')
+    a('    ' + extract_one + ' "$1" >/dev/block/bootdevice/by-name/${2}_a')
+    a('    ' + extract_one + ' "$1" >/dev/block/bootdevice/by-name/${2}_b')
     a("}")
     a("")
     a("extract_flash_zstd() {")
     a('    ui_print "- super.img.zst -> super (zstd 流式解压)"')
-    a('    unzip -p "$ZIPFILE" "$1" | /tmp/bin/android/zstd -c -d >/dev/block/bootdevice/by-name/super')
+    a('    ' + extract_one + ' "$1" | /tmp/bin/android/zstd -c -d >/dev/block/bootdevice/by-name/super')
     a("}")
     a("")
     a("getVolumeKey() {")
@@ -807,6 +816,8 @@ def gen_update_binary(staging, device, model, port_ver, base_ver, sec_patch):
     a("[ -d /tmp ] && rm -rf /tmp")
     a("mkdir -p /tmp")
     a('unzip -o "$ZIPFILE" "bin/android/zstd" -d /tmp')
+    if has_7zzs:
+        a('unzip -o "$ZIPFILE" "bin/android/7zzs" -d /tmp')
     a("chmod -R 0755 /tmp")
     a('ui_print " "')
     a('ui_print "========================="')

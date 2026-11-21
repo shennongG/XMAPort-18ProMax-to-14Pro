@@ -16,7 +16,7 @@
 | --- | --- | --- |
 | 机型 | Xiaomi 18 Pro Max | Xiaomi 14 Pro |
 | 代号 | `madrid` | `shennong` |
-| 版本 | OS4.0.30.0.XEOCNXM（默认，官方直链可用；与完美包同源） | OS3.0.310.0.WNBCNXM |
+| 版本 | OS4.0.31.0.XEOCNXM（默认，官方直链可用；与 rom2 完美包同源） | OS3.0.310.0.WNBCNXM |
 | Android | 17 | 16 |
 | 分区角色 | system / system_ext / product / mi_ext | odm / vendor / boot / 固件 |
 
@@ -70,7 +70,7 @@ python XMAPort.py
 | --- | --- | --- |
 | `device_platform` | `Qualcomm` | 填错有变砖风险 |
 | `device_size` | `8321499136` | shennong super 实测大小 |
-| `[source] url` | OS4.0.30 madrid 直链 | 与完美包同源版本（12.46 GB）；可换其它 madrid 版本 |
+| `[source] url` | OS4.0.31 madrid 直链 | 与 rom2 完美包同源版本（12.46 GB）；可换 4.0.30 / 4.0.29 |
 | `[target] url` | OS3.0.310 shennong 直链 | 提供 odm / vendor / 固件 |
 | `[packing] base_first` | `false` | 默认源包为主；实验性底包骨架模式见下 |
 | `[shallow] density` | 空 | 由 `fix_density_tree()` 强制 560 |
@@ -133,6 +133,16 @@ docs/shennong/                   移植说明与基线文档
 
 > 若更换底包机型，需为该机型重新提供 TWRP（单个 `.img.zst` 或其 `.part*` 分片）与对应 `flashtools`；缺失 TWRP 时脚本会**拒绝出包**（主线强制第三方 RE）。
 > ROOT 菜单里 APatch / FolkPatch 需要 `devices/<device>/root/boot_apatch.img` / `boot_folkpatch.img`（各 96 MB，未随仓库分发）；缺失时脚本会提示"不可用，请重选"，不影响其它 ROOT 方式。
+
+### 卡刷为什么必须用包内 7zzs
+
+`super.img.zst` 约 **6.4 GB**，超过 4 GB，在 zip 里只能以 ZIP64 条目存放。
+Recovery 自带的 `unzip`（busybox / toybox）多数**不支持 ZIP64**：轻则报错退出，
+重则静默截断，刷完的 super 不完整 → 直接不开机。因此 `update-binary` 里所有镜像解包
+统一走随包的 `bin/android/7zzs e -so`（与 X-MiPort 完美包同一做法），只有 7zzs 缺失时才退回 `unzip -p`。
+
+同时 `build_flashpack.py` 会把 >4 GB 的条目排到 zip 末尾，避免小条目的局部头偏移落在 4 GB 之后，
+被 360压缩 等工具误判为"头部数据损坏"。
 
 `config.ini` 里 `build_flashpack=true` 即开启；CI 构建后会自动把 flashpack 分卷发布到 Release。
 

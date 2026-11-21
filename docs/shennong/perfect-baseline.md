@@ -13,12 +13,16 @@
 
 | 基准 | 源包 | 底包 | 状态 |
 | --- | --- | --- | --- |
-| X-MiPort 完美包（本仓库 `rom2`） | OS4.0.30.0.XEOCNXM / madrid | OS3.0.310.0.WNBCNXM | 真机可开机 |
-| X-MiPort 完美包（早期） | OS4.0.29.0.XEOCNXM / madrid | OS3.0.310.0.WNBCNXM | 真机可开机 |
+| X-MiPort 完美包（`rom2`，当前） | OS4.0.31.0.XEOCNXM / madrid | OS3.0.310.0.WNBCNXM | 真机可开机 |
+| X-MiPort 完美包（早期） | OS4.0.30.0.XEOCNXM / madrid | OS3.0.310.0.WNBCNXM | 真机可开机 |
+| X-MiPort 完美包（更早） | OS4.0.29.0.XEOCNXM / madrid | OS3.0.310.0.WNBCNXM | 真机可开机 |
 | 本项目 V5（兜底） | OS4.0.29.0.XEOCNXM / madrid | OS3.0.310.0.WNBCNXM | 真机可开机 |
 
-2026-11-16 复核：4.0.30 完美包 8 个分区条目数与 4.0.29 基线**完全一致**，
-下列关键项全部命中，因此同一份基线 JSON 同时适用两个源版本。
+2026-11-21 复核（4.0.31，`--lists-dir --strict-counts` 实跑）：
+system 4793 / system_ext 3693 / product 2315 / odm 2321 / vendor 2968 / mi_ext 147 /
+vendor_dlkm 328 / system_dlkm 186，关键 SELinux 标签、oat 17 项、无 rearscreen 全部命中，
+`[PASS] 全部关键项对齐完美包基线`。与 4.0.29/4.0.30 相比只有 product +6，
+因此同一份基线 JSON 同时适用 4.0.29 / 4.0.30 / 4.0.31。
 
 ## 可开机特征（基线 JSON 内容）
 
