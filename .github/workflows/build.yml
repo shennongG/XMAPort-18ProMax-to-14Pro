@@ -47,6 +47,11 @@ jobs:
     timeout-minutes: 300
     permissions:
       contents: write
+    env:
+      # Windows runner 默认 stdout 是 cp1252，脚本里的中文 print 会
+      # UnicodeEncodeError 直接 exit 1（2026-11-21 verify_flashpack 踩过）。
+      PYTHONIOENCODING: utf-8
+      PYTHONUTF8: '1'
 
     steps:
       - uses: actions/checkout@v6

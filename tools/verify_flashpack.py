@@ -20,6 +20,13 @@ import sys
 import zipfile
 from pathlib import Path
 
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
+
 ROOT = Path(__file__).resolve().parent.parent
 WORKSPACE = ROOT / "workspace"
 ZIP64_LIMIT = 4 * 1024 ** 3

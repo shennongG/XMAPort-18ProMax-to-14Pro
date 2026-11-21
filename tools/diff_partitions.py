@@ -18,6 +18,13 @@ import collections
 import re
 from pathlib import Path
 
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
+
 PARTS = ("system", "system_ext", "product", "odm", "vendor", "mi_ext",
          "vendor_dlkm", "system_dlkm")
 FC = re.compile(
