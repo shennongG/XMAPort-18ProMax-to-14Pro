@@ -3,8 +3,8 @@
 将 **小米 18 Pro Max（madrid，HyperOS OS4 / Android 17）** 的 ROM 移植到
 **小米 14 Pro（shennong，HyperOS OS3 / Android 16）** 的一体化流水线。
 
-以 [NorthStarK-Lvy/XMAPort](https://github.com/NorthStarK-Lvy/XMAPort) 为骨架，
-并借鉴 X-MiPort 的**同版本完美包**（真机可开机的移植成品）内容基线，把「移植 + 精简 + 打包 + 校验」
+以 [NorthStarK-Lvy/XMAPort] 为骨架，
+并借鉴其他的**同版本完美包**（真机可开机的移植成品）内容基线，把「移植 + 精简 + 打包 + 校验」
 收敛进一条命令。
 
 > ⚠️ 跨 Android 大版本移植（17 → 16）风险高。本项目已内置兼容注入与内容基线校验，
