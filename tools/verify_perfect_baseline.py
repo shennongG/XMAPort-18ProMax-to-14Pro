@@ -120,7 +120,7 @@ def find_one(base, patterns):
 def collect_tree(tree):
     data = {"selabels": {}, "product_paths": set(), "miui_oat": 0,
             "density": {}, "vibrator": [], "unlabeled_files": [],
-            "entry_counts": {}, "mode": "tree"}
+            "entry_counts": {}, "props": {}, "mode": "tree"}
     cfg = tree / "config"
     if cfg.is_dir():
         fc_files = sorted(cfg.glob("*file_contexts*"))
@@ -162,10 +162,17 @@ def collect_tree(tree):
     bp = find_one(tree, ["product/etc/build.prop", "product/product/etc/build.prop"])
     if bp:
         text = bp.read_text(encoding="utf-8", errors="replace")
+        props = {}
+        for line in text.splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            props[k.strip()] = v.strip()
+        data["props"] = props
         for key in ("ro.sf.lcd_density", "persist.miui.density_v2"):
-            m = re.search(r"^{}\s*=\s*(\S+)".format(re.escape(key)), text, re.M)
-            if m:
-                data["density"][key] = m.group(1).strip()
+            if key in props:
+                data["density"][key] = props[key]
     for pat in ("odm/etc/vintf/manifest/*.xml", "odm/odm/etc/vintf/manifest/*.xml"):
         for vintf in sorted(tree.glob(pat)):
             if vintf.is_file():
@@ -226,6 +233,23 @@ def check(data, base, strict_counts=False):
         else:
             add(got == str(want_v), "密度 " + key,
                 "实际 {} / 期望 {}".format(got, want_v))
+
+    # 移植机型属性：跨版本必须关掉源包预加载，且机型标识不能还是源机
+    props = data.get("props") or {}
+    if props:
+        for key, want_v in base.get("product_props_expect", {}).items():
+            got = props.get(key)
+            if got is None:
+                add(False, "属性缺失 " + key, "应为 {}".format(want_v))
+            else:
+                add(got == str(want_v), "属性 " + key,
+                    "实际 {} / 期望 {}".format(got, want_v))
+        for key, bad in base.get("product_props_forbid", {}).items():
+            got = props.get(key, "")
+            add(bad not in got, "机型属性 " + key,
+                "{}".format(got if got else "（缺失）") + " / 不得含 {}".format(bad))
+    else:
+        add(True, "product/build.prop 属性", "清单模式无法读取，跳过", warn=True)
 
     vib_min = int(base.get("vibrator_instances", {}).get("project_min", 1))
     if data["vibrator"]:

@@ -53,5 +53,19 @@
     "priv-app/MiuiCamera",
     "priv-app/AutoRegistration"
   ],
-  "product_add_note": "完美包 = 源包 2533 - 删 363 + 补 139；补入项由 devices/shennong/perfect_add_paths.txt 在 Step 8 从底包 310 复制，CI 按本清单硬校验"
+  "product_add_note": "完美包 = 源包 2533 - 删 363 + 补 139；补入项由 devices/shennong/perfect_add_paths.txt 在 Step 8 从底包 310 复制，CI 按本清单硬校验",
+  "product_props_expect": {
+    "ro.product.product.name": "miproduct_shennong",
+    "persist.sys.art_startup_class_preload.enable": "false",
+    "persist.sys.precache.enable": "false",
+    "persist.sys.preload.enable": "false",
+    "persist.sys.app_dexfile_preload.enable": "false",
+    "persist.sys.prestart.proc": "false"
+  },
+  "product_props_forbid": {
+    "ro.build.description": "madrid-user",
+    "ro.product.build.fingerprint": "/madrid/",
+    "persist.vendor.bluetooth.lhdc_v5.supported": "madrid"
+  },
+  "product_props_note": "2026-11-21 逐键对比：完美包把 product/build.prop 的机型标识改为 shennong，并关闭 ART 预加载/precache/preload/prestart；本项目此前完全没有这些 patch。清单见 devices/shennong/product_props.conf（52 项）。"
 }

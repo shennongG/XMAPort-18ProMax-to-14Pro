@@ -130,6 +130,7 @@ DEFAULT_SHALLOW_CFG = {
     "inject_device_files": "true",
     "replace_camera": "true",
     "apply_fixes": "true",
+    "patch_product_props": "true",
     "patch_build_prop": "true",
     "density": "",
     "aptx_lossless": "true",
@@ -188,12 +189,15 @@ def read_target_device(argv_device=""):
 
 
 # ---------------------------------------------------------------- 路径解析
-def part_roots(part, base=SRC_FS):
+def part_roots(part, base=None):
     """返回分区内容根的候选（兼容 system-as-root 双层结构），按优先级排序。
 
     例 part=system：<fs>/system 与 <fs>/system/system 都存在时，
     真正想要的 system 内容实际在后者；两者都返回交给上层按子路径挑选。
+
+    base 默认在调用时解析 SRC_FS（不能用默认参数绑定，import 后就固化了）。
     """
+    base = SRC_FS if base is None else base
     base_root = base / part
     cands = [base_root]
     nested = base_root / part
@@ -202,8 +206,9 @@ def part_roots(part, base=SRC_FS):
     return [p for p in cands if p.is_dir()]
 
 
-def find_subdir(part, relpath, base=SRC_FS):
+def find_subdir(part, relpath, base=None):
     """在分区内定位 relpath（相对分区内容根），返回首个命中的 Path 或 None"""
+    base = SRC_FS if base is None else base
     parts = [p for p in str(relpath).replace("\\", "/").split("/") if p]
     for root in part_roots(part, base):
         cand = root.joinpath(*parts)
@@ -212,8 +217,9 @@ def find_subdir(part, relpath, base=SRC_FS):
     return None
 
 
-def ensure_subdir(part, relpath, base=SRC_FS):
+def ensure_subdir(part, relpath, base=None):
     """定位或创建分区内目录（优先落在父链已存在的 root 上，避免造出空壳层级）"""
+    base = SRC_FS if base is None else base
     hit = find_subdir(part, relpath, base)
     if hit:
         return hit
@@ -258,7 +264,8 @@ def resolve_scan_dir(part, relpath, base=SRC_FS):
     return None
 
 
-def find_file_in_part(part, relpath, base=SRC_FS):
+def find_file_in_part(part, relpath, base=None):
+    base = SRC_FS if base is None else base
     parts = [p for p in str(relpath).replace("\\", "/").split("/") if p]
     for root in part_roots(part, base):
         cand = root.joinpath(*parts)
@@ -759,6 +766,98 @@ def _prop_set(path, key, value, add_if_missing=False):
     if hit:
         p.write_text("\n".join(out) + "\n", encoding="utf-8")
     return hit
+
+
+def _prop_get(path, key):
+    p = Path(path)
+    if not p.is_file():
+        return ""
+    for line in p.read_text(encoding="utf-8", errors="replace").splitlines():
+        s = line.strip()
+        if "=" in s and s.split("=", 1)[0].strip() == key:
+            return s.split("=", 1)[1].strip()
+    return ""
+
+
+def step_patch_product_props(device, cfg, dry=False):
+    """把 product/build.prop 改成「目标机型」，并写入跨版本移植必需属性。
+
+    2026-11-21 逐键对比 X-MiPort 完美包（真机可开机）发现两处本项目完全没做的事：
+
+    1. 机型标识仍是源机：`ro.product.product.name=miproduct_madrid`、
+       `ro.build.flavor=miproduct_madrid-user`、`ro.build.description=madrid-user ...`、
+       `ro.product.build.fingerprint=Xiaomi/madrid/...`。而 odm/vendor 是 shennong，
+       机型特性与资源按 madrid 加载，与底包错位。
+    2. 源包的 ART 预加载 / 预缓存 / prestart 全部开着。跨版本移植后源包的
+       预编译产物在目标底包上失效，开启预加载会加载失效类，表现为卡开机动画。
+
+    完美包的做法：机型标识改成 shennong，并把
+    `persist.sys.{art_startup_class_preload,precache,preload,app_dexfile_preload}.enable`
+    与 `persist.sys.prestart.*` 全部设为 false。清单见
+    devices/<device>/product_props.conf。
+    """
+    title("SHALLOW 4/9  移植机型属性 (product/build.prop)")
+    if not get_bool(cfg, "patch_product_props", True):
+        info("patch_product_props=false, skipped")
+        _bump("skip")
+        return True
+    bp = find_file_in_part("product", "etc/build.prop") or \
+        find_file_in_part("product", "build.prop")
+    if not bp:
+        warn("product build.prop 未找到, skipped")
+        _bump("skip")
+        return True
+
+    name = _prop_get(bp, "ro.product.product.name")
+    src = name.rsplit("_", 1)[-1] if name else ""
+    changed = 0
+    if src and device and src != device:
+        # 只改这几个标识键，避免误伤其它含源代号的 value
+        for key in ("ro.product.product.name", "ro.build.flavor",
+                    "ro.build.description", "ro.product.build.fingerprint",
+                    "ro.build.fingerprint"):
+            val = _prop_get(bp, key)
+            if not val or src not in val:
+                continue
+            newval = val.replace(src, device)
+            if dry:
+                info("[dry] {}: {} -> {}".format(key, val, newval))
+            elif _prop_set(bp, key, newval):
+                changed += 1
+                info("{}: {} -> {}".format(key, val, newval))
+        for key in ("persist.vendor.bluetooth.lhdc_v4.supported",
+                    "persist.vendor.bluetooth.lhdc_v5.supported"):
+            val = _prop_get(bp, key)
+            if val and val == src:
+                if not dry and _prop_set(bp, key, device):
+                    changed += 1
+        if not dry:
+            _prop_set(bp, "ro.product.port.device", src, True)
+        ok("机型标识 {} -> {}（{} 处）".format(src, device, changed))
+    elif name:
+        info("机型标识已是 {}，跳过替换".format(name))
+
+    conf = DEVICES_DIR / device / "product_props.conf"
+    applied = 0
+    if conf.is_file():
+        for line in conf.read_text(encoding="utf-8", errors="replace").splitlines():
+            s = line.strip()
+            if not s or s.startswith("#") or "=" not in s:
+                continue
+            k, v = s.split("=", 1)
+            k, v = k.strip(), v.strip()
+            if not k:
+                continue
+            if dry:
+                applied += 1
+                continue
+            if _prop_set(bp, k, v, True):
+                applied += 1
+        ok("移植属性: {} 项（预加载/prestart 关闭 + 机型调优）".format(applied))
+    else:
+        info("no {} found, skip props".format(conf.name))
+    _bump("ok")
+    return True
 
 
 def step_patch_build_prop(device, cfg, dry=False):
@@ -1324,6 +1423,7 @@ STEPS = [
     ("remove_apps", step_remove_apps),
     ("inject_device_files", step_inject_device_files),
     ("replace_camera", step_replace_camera),
+    ("patch_product_props", step_patch_product_props),
     ("patch_build_prop", step_patch_build_prop),
     ("disable_signature_verification", step_disable_signature_verification),
     ("perfect_icons", step_perfect_icons),
