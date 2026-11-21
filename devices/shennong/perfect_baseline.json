@@ -42,5 +42,16 @@
   },
   "services_odex_required": false,
   "max_unlabeled_critical_files": 0,
-  "notes": "V5 已验证包同样满足本基线（除振动为双实例、product 更精简）。services.odex 完美包也没有，非必需。 计数口径：仅 .odex/.vdex/.art 本体（不含 .fsv_meta），完美包 17 / V5 19 / 全新构建 0。"
+  "notes": "V5 已验证包同样满足本基线（除振动为双实例、product 更精简）。services.odex 完美包也没有，非必需。 计数口径：仅 .odex/.vdex/.art 本体（不含 .fsv_meta），完美包 17 / V5 19 / 全新构建 0。",
+  "product_required_dirs": [
+    "app/WMService",
+    "app/UPTsmService",
+    "app/system",
+    "app/talkback",
+    "app/PaymentService",
+    "pangu/system/app/NQNfcNci",
+    "priv-app/MiuiCamera",
+    "priv-app/AutoRegistration"
+  ],
+  "product_add_note": "完美包 = 源包 2533 - 删 363 + 补 139；补入项由 devices/shennong/perfect_add_paths.txt 在 Step 8 从底包 310 复制，CI 按本清单硬校验"
 }

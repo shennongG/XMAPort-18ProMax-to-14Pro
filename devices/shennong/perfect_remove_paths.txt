@@ -256,3 +256,25 @@ overlay/NavigationBarModeGesturalExtraWideBack/NavigationBarModeGesturalOverlayE
 overlay/NavigationBarModeGesturalNarrowBack/NavigationBarModeGesturalOverlayNarrowBack.apk
 overlay/NavigationBarModeGesturalWideBack/NavigationBarModeGesturalOverlayWideBack.apk
 priv-app/MIUIBrowser/MIUIBrowser.apk
+
+# 2026-11-21 补充：完美包没有、此前产物残留的 madrid 资源/预装应用
+app/MiAONServiceX/MiAONServiceX.apk
+app/MiAONServiceX/oat/arm64/MiAONServiceX.odex
+app/MiAONServiceX/oat/arm64/MiAONServiceX.vdex
+data-app/DownloadProviderUi/DownloadProviderUi.apk
+data-app/HyperGalleryPluginCn/HyperGalleryPluginCn.apk
+data-app/MIUIBestPhotos/MIUIBestPhotos.apk
+data-app/MIUICleanMaster/MIUICleanMaster.apk
+data-app/MIUIDeskClock/MIUIDeskClock.apk
+data-app/MIUIGallery/MIUIGallery.apk
+data-app/MIUINotes/MIUINotes.apk
+data-app/MIUISoundRecorderTargetSdk30/MIUISoundRecorderTargetSdk30.apk
+data-app/MIUIWeather/MIUIWeather.apk
+data-app/MIUIXiaoAiSpeechEngine/MIUIXiaoAiSpeechEngine.apk
+data-app/MiMediaEditor/MiMediaEditor.apk
+data-app/OS4VipAccount/OS4VipAccount.apk
+data-app/wps-lite/wps-lite.apk
+etc/displayconfig/app_brightness_category.xml
+etc/displayconfig/outdoor_thermal_app_category_list_backup.xml
+etc/displayconfig/resolution_switch_process_list_backup.xml
+etc/displayconfig/thermal_brightness_control.xml

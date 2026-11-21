@@ -78,3 +78,34 @@ python tools/verify_perfect_baseline.py --lists-dir <清单目录> --tag perfect
 
 **CI 通过 ≠ 真机可开机**：静态基线是必要条件，不是充分条件。最终仍需上机验证，
 卡机时抓 `adb logcat` 与 `/sys/fs/pstore/console-ramoops` 定位崩点。
+
+## 5. 完美包「补入」的底包原生应用（2026-11-21 新增）
+
+逐文件对比 4.0.29 完美包与源包后，确认完美包不是「只裁剪源包」：
+
+| 项 | 条目数 |
+| --- | --- |
+| 源包 product | 2533 |
+| 完美包删除 | −363 |
+| 完美包补入 | +139 |
+| 完美包 product | 2309 |
+
+补入项全部是 **shennong（底包 310）原生、madrid 4.0.29 没有** 的系统应用：
+
+| 路径 | 说明 |
+| --- | --- |
+| `app/WMService` | 窗口管理扩展服务 |
+| `app/UPTsmService` | TEE / 可信服务（含 8 个 .so） |
+| `app/system/system.apk` | 系统核心应用（曾被 `product:app:=system` 误删） |
+| `pangu/system/app/NQNfcNci` | NFC 控制器 |
+| `app/talkback` / `app/PaymentService` / `priv-app/AutoRegistration` | 辅助功能 / 支付 / 注册 |
+
+本仓库旧产物只删不补，真机反复卡 HyperOS 二屏。现在：
+
+1. `devices/shennong/perfect_add_paths.txt` 列出 82 个待补文件；
+2. `step_align_perfect_product` 在删除之后，从底包 `product` 树复制补齐；
+3. `perfect_baseline.json` 的 `product_required_dirs` 由 CI 硬校验，缺一个即 FAIL；
+4. `remove_apps.conf` 里与完美包冲突的 21 条已用 `!` 停用。
+
+> 补入文件不随仓库分发（相机 apk 175 MB 等大文件会超 GitHub 限制），
+> 全部取自 `config.ini [target]` 下载的底包。

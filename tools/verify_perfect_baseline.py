@@ -67,6 +67,11 @@ def find_list(directory, part, tag):
     cands = sorted(directory.glob("list*_{}.txt".format(part + "_a")))
     if not cands:
         cands = sorted(directory.glob("list*_{}.txt".format(part)))
+    if not cands:
+        # 也接受 extract.erofs -p 直接重定向得到的 <part>.txt
+        exact = directory / (part + ".txt")
+        if exact.is_file():
+            cands = [exact]
     if tag:
         prefer = [c for c in cands if tag in c.stem]
         if prefer:
@@ -194,9 +199,20 @@ def check(data, base, strict_counts=False):
         "{} 项 / 最少 {} 项".format(data["miui_oat"], oat_min))
 
     paths = data["product_paths"]
+    if not paths:
+        # 清单缺失/解析失败时，禁用目录与上限检查会全部「0 项 PASS」，
+        # 属于假阳性；必须显式失败。
+        add(False, "product 清单", "为空（-p 清单缺失或解析失败）")
     for d in base.get("product_forbidden_dirs", []):
         n = sum(1 for p in paths if p.startswith(d.rstrip("/") + "/") or p == d)
         add(n == 0, "product 禁用目录 " + d, "{} 项".format(n))
+
+    # 完美包「补入」的应用必须存在：源包 madrid 4.0.x 本身没有这些
+    # shennong 原生服务（WMService / UPTsmService / pangu NQNfcNci …），
+    # 只删不补会让真机卡 HyperOS 二屏（2026-11-21 定性）。
+    for d in base.get("product_required_dirs", []):
+        n = sum(1 for p in paths if p.startswith(d.rstrip("/") + "/") or p == d)
+        add(n > 0, "product 必需应用 " + d, "{} 项".format(n))
 
     for key, limit in base.get("product_max_counts", {}).items():
         n = sum(1 for p in paths if key in p)

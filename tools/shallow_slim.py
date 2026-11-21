@@ -1259,6 +1259,59 @@ def step_align_perfect_product(device, cfg, dry=False):
                 break
     ok("perfect-baseline product trim: {} file(s) {}".format(
         removed, "would be removed" if dry else "removed"))
+
+    # ---- 补入：完美包有、源包没有的底包原生应用 ----
+    # 只删不补会让产物缺 WMService / UPTsmService / pangu NQNfcNci 等
+    # shennong 原生服务，真机卡 HyperOS 二屏（2026-11-21 定性）。
+    addlist = DEVICES_DIR / device / "perfect_add_paths.txt"
+    added = 0
+    absent = []
+    if addlist.is_file():
+        src_roots = part_roots("product", TGT_FS)
+        if not src_roots:
+            warn("底包 product 树不存在，无法补入 {} 个文件".format(
+                sum(1 for l in addlist.read_text(encoding="utf-8", errors="replace").splitlines()
+                    if l.strip() and not l.startswith("#"))))
+        else:
+            for line in addlist.read_text(encoding="utf-8", errors="replace").splitlines():
+                rel = line.strip()
+                if not rel or rel.startswith("#"):
+                    continue
+                src = None
+                for r in src_roots:
+                    cand = r / rel
+                    if cand.is_file():
+                        src = cand
+                        break
+                if src is None:
+                    absent.append(rel)
+                    continue
+                for root in roots:
+                    dst = root / rel
+                    if dst.exists():
+                        break
+                    if dry:
+                        info("[dry] would add: {}".format(rel))
+                    else:
+                        try:
+                            dst.parent.mkdir(parents=True, exist_ok=True)
+                            shutil.copy2(src, dst)
+                        except OSError as e:
+                            warn("cannot add {}: {}".format(rel, e))
+                            break
+                    added += 1
+                    break
+            ok("perfect-baseline product add: {} file(s) {}".format(
+                added, "would be added" if dry else "added"))
+            if absent:
+                warn("底包缺少 {} 个补入文件（完美包有、310 底包无）".format(len(absent)))
+                for rel in absent[:10]:
+                    warn("   missing in base: " + rel)
+                if len(absent) > 10:
+                    warn("   ... 其余 {} 条省略".format(len(absent) - 10))
+    else:
+        info("no {} found, skip add".format(addlist.name))
+
     _bump("ok")
     return True
 

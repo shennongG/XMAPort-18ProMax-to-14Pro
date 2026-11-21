@@ -3,8 +3,8 @@
 将 **小米 18 Pro Max（madrid，HyperOS OS4 / Android 17）** 的 ROM 移植到
 **小米 14 Pro（shennong，HyperOS OS3 / Android 16）** 的一体化流水线。
 
-以 [NorthStarK-Lvy/XMAPort] 为骨架，
-并借鉴其他的**同版本完美包**（真机可开机的移植成品）内容基线，把「移植 + 精简 + 打包 + 校验」
+以 [NorthStarK-Lvy/XMAPort](https://github.com/NorthStarK-Lvy/XMAPort) 为骨架，
+并借鉴 X-MiPort 的**同版本完美包**（真机可开机的移植成品）内容基线，把「移植 + 精简 + 打包 + 校验」
 收敛进一条命令。
 
 > ⚠️ 跨 Android 大版本移植（17 → 16）风险高。本项目已内置兼容注入与内容基线校验，
@@ -165,6 +165,29 @@ Recovery 自带的 `unzip`（busybox / toybox）多数**不支持 ZIP64**：轻�
 - `30.0.cil` / `30.0.compat.cil` = `sepolicy_file`，`bugreporter` = `shell_exec`
 - system_ext 保留 miui-services oat（本体 ≥ 15）
 - product 无 `media/rearscreen`
+- product **必须含** `app/WMService`、`app/UPTsmService`、`app/system`、
+  `pangu/system/app/NQNfcNci` 等底包原生服务
+
+### 完美包对齐 = 删 + 补
+
+2026-11-21 对 4.0.29 完美包逐文件对比，得到它的真实构成：
+
+| 项 | 条目数 |
+| --- | --- |
+| 源包 product（madrid 4.0.29） | 2533 |
+| 完美包删除（madrid 副屏/主题资源、可卸载预装） | −363 |
+| 完美包**补入**（shennong 原生、madrid 没有的应用） | +139 |
+| 完美包 product | 2309 |
+
+补入的是 `app/WMService`、`app/UPTsmService`、`app/system/system.apk`、
+`pangu/system/app/NQNfcNci`、`app/talkback`、`priv-app/AutoRegistration` 这类
+**底包原生系统服务**。本项目此前只做「删」，产物 2533 项、这些服务全缺，
+真机表现为反复卡 HyperOS 二屏、机身不热。
+
+现在 Step 8 会按 `devices/shennong/perfect_add_paths.txt`（82 个文件）
+从底包 `product` 复制补齐，不从仓库分发二进制；CI 用 `product_required_dirs` 硬校验。
+同时 `remove_apps.conf` 中与完美包冲突的条目已用 `!` 停用——尤其
+`product:app:=system` 会误删系统核心 `/app/system/system.apk`。
 - 密度 560、振动 HAL ≥ 1 实例
 
 ## 致谢与许可

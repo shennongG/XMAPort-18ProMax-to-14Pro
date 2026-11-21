@@ -1,0 +1,96 @@
+# XMAPort 完美包补入清单（shennong / 18 Pro Max -> 14 Pro）
+#
+# 2026-11-21 实测定性：X-MiPort 4.0.29 完美包（真机可开机）的 product 不是
+# 「只裁剪源包」，而是 源包 2533 - 删 363 + 补 139。补入的是 14 Pro（底包
+# 310）原生、madrid 4.0.29 没有的系统应用（WMService / UPTsmService /
+# pangu NQNfcNci / app/system 等），本仓库此前的产物只删不补，真机卡
+# HyperOS 二屏。
+#
+# 这些文件直接取自底包（config.ini [target] 下载的 shennong 310），
+# 不随仓库分发，避免 175 MB 相机等大文件进 git。
+#
+# 格式：分区内相对路径，一行一条，相对 <product 内容根>。
+# 底包缺失的条目由 align_perfect_product 汇总告警，CI 会用文件数复核。
+
+app/AnalyticsCore/AnalyticsCore.apk
+app/CarWith/CarWith.apk
+app/CatchLog/CatchLog.apk
+app/CatchLog/oat/arm64/CatchLog.odex
+app/CatchLog/oat/arm64/CatchLog.vdex
+app/GoogleLocationHistory/GoogleLocationHistory.apk
+app/GoogleLocationHistory/oat/arm64/GoogleLocationHistory.odex
+app/GoogleLocationHistory/oat/arm64/GoogleLocationHistory.vdex
+app/HybridPlatform/HybridPlatform.apk
+app/LyraSdkSpp/oat/arm/LyraSdkSpp.odex
+app/LyraSdkSpp/oat/arm/LyraSdkSpp.vdex
+app/MIUIReporter/MIUIReporter.apk
+app/MIUIgreenguard/MIUIgreenguard.apk
+app/MIUIgreenguard/oat/arm64/MIUIgreenguard.odex
+app/MIUIgreenguard/oat/arm64/MIUIgreenguard.vdex
+app/MSA/oat/arm64/MSA.odex
+app/MSA/oat/arm64/MSA.vdex
+app/MiAONServiceV2/MiAONServiceV2.apk
+app/PaymentService/PaymentService.apk
+app/RideModeAudio/RideModeAudio.apk
+app/RideModeAudio/oat/arm64/RideModeAudio.odex
+app/RideModeAudio/oat/arm64/RideModeAudio.vdex
+app/SwitchAccess/SwitchAccess.apk
+app/SwitchAccess/oat/arm64/SwitchAccess.odex
+app/SwitchAccess/oat/arm64/SwitchAccess.vdex
+app/UPTsmService/UPTsmService.apk
+app/UPTsmService/lib/arm64/libDeepNetV2.so
+app/UPTsmService/lib/arm64/libcwlive.so
+app/UPTsmService/lib/arm64/libenlic.so
+app/UPTsmService/lib/arm64/libentryexpro.so
+app/UPTsmService/lib/arm64/libupbio_net.so
+app/UPTsmService/lib/arm64/libupliveness.so
+app/UPTsmService/lib/arm64/libuptsmaddonmi.so
+app/UPTsmService/lib/arm64/libuptsmservice.so
+app/UPTsmService/lib/arm64/libxdjacrypto.so
+app/WMService/WMService.apk
+app/WMService/oat/arm64/WMService.odex
+app/WMService/oat/arm64/WMService.vdex
+app/com.xiaomi.ugd/com.xiaomi.ugd.apk
+app/remoteSimLockAuthentication/remoteSimLockAuthentication.apk
+app/remotesimlockservice/oat/arm64/remotesimlockservice.odex
+app/remotesimlockservice/oat/arm64/remotesimlockservice.vdex
+app/remotesimlockservice/remotesimlockservice.apk
+app/system/system.apk
+app/talkback/oat/arm64/talkback.odex
+app/talkback/oat/arm64/talkback.vdex
+app/talkback/talkback.apk
+pangu/system/app/NQNfcNci/NQNfcNci.apk
+pangu/system/app/NQNfcNci/oat/arm64/NQNfcNci.odex
+pangu/system/app/NQNfcNci/oat/arm64/NQNfcNci.vdex
+priv-app/AutoRegistration/AutoRegistration.apk
+priv-app/AutoRegistration/oat/arm64/AutoRegistration.odex
+priv-app/AutoRegistration/oat/arm64/AutoRegistration.vdex
+priv-app/ConfigUpdater/ConfigUpdater.apk
+priv-app/ConfigUpdater/oat/arm64/ConfigUpdater.odex
+priv-app/ConfigUpdater/oat/arm64/ConfigUpdater.vdex
+priv-app/MiGameCenterSDKService/MiGameCenterSDKService.apk
+priv-app/MiGameCenterSDKService/lib/arm64/libYTCommonLiveness.so
+priv-app/MiGameCenterSDKService/lib/arm64/libbytehook.so
+priv-app/MiGameCenterSDKService/lib/arm64/libc++_shared.so
+priv-app/MiGameCenterSDKService/lib/arm64/libentryexpro.so
+priv-app/MiGameCenterSDKService/lib/arm64/libkoom-java.so
+priv-app/MiGameCenterSDKService/lib/arm64/libkwai-android-base.so
+priv-app/MiGameCenterSDKService/lib/arm64/libkyctoolkit.so
+priv-app/MiGameCenterSDKService/lib/arm64/libmicrash.so
+priv-app/MiGameCenterSDKService/lib/arm64/libmicrash_dumper.so
+priv-app/MiGameCenterSDKService/lib/arm64/libmistr.so
+priv-app/MiGameCenterSDKService/lib/arm64/libshadowhook.so
+priv-app/MiGameCenterSDKService/lib/arm64/libshadowhook_nothing.so
+priv-app/MiGameCenterSDKService/lib/arm64/libsmsdk.so
+priv-app/MiGameCenterSDKService/lib/arm64/libturingmfa.so
+priv-app/MiGameCenterSDKService/lib/arm64/libuptsmaddon.so
+priv-app/MiGameCenterSDKService/lib/arm64/libweconvert.so
+priv-app/MiGameCenterSDKService/lib/arm64/libweyuv.so
+priv-app/MiGameCenterSDKService/lib/arm64/libxcrash.so
+priv-app/MiGameCenterSDKService/lib/arm64/libxcrash_dumper.so
+priv-app/MiGameCenterSDKService/lib/arm64/libxhook_lib.so
+priv-app/MiuiCamera/oat/arm64/MiuiCamera.odex
+priv-app/MiuiCamera/oat/arm64/MiuiCamera.vdex
+priv-app/RegService/RegService.apk
+priv-app/RegService/oat/arm64/RegService.odex
+priv-app/RegService/oat/arm64/RegService.vdex
