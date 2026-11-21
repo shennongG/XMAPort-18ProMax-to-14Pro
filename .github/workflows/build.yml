@@ -127,6 +127,15 @@ jobs:
           .\tools\7z.exe a -t7z -mx=5 -v1900m workspace\super-${{ inputs.device }}.7z workspace\packed\super.img
           if ($LASTEXITCODE -ne 0) { Write-Error "7z failed (exit $LASTEXITCODE)"; exit 1 }
 
+      - name: Verify flash pack (fastboot + recovery)
+        shell: pwsh
+        if: inputs.slim_only != true
+        run: |
+          # 交付物就是「线刷 + 卡刷一体包」：结构不对宁可不发 Release。
+          # 重点拦住 super.img.zst 被截断、7zzs 未随包（卡刷 ZIP64 必失败）两类问题。
+          python tools/verify_flashpack.py --device ${{ inputs.device }}
+          if ($LASTEXITCODE -ne 0) { Write-Error "一体包自检失败 - 见 tools/verify_flashpack.py"; exit 1 }
+
       - name: Split flash pack for release
         shell: pwsh
         if: inputs.slim_only != true

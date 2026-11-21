@@ -144,6 +144,18 @@ Recovery 自带的 `unzip`（busybox / toybox）多数**不支持 ZIP64**：轻�
 同时 `build_flashpack.py` 会把 >4 GB 的条目排到 zip 末尾，避免小条目的局部头偏移落在 4 GB 之后，
 被 360压缩 等工具误判为"头部数据损坏"。
 
+### 出包自检
+
+拆 Release 分卷前，CI 会跑 `tools/verify_flashpack.py` 逐项确认：
+
+- `META-INF/com/google/android/update-binary` 存在，且解包走 `7zzs`
+- `bin/android/7zzs`、`bin/android/zstd` 随包
+- `images/super.img.zst` > 4 GB，且 zstd 帧头（`28 b5 2f fd`）正确
+- `images/recovery_twrp.img` 与 `XMAPort-Flash.bat` 存在
+- 所有 ≤4 GB 条目的 `header_offset` < 4 GB
+
+任一不通过即中断构建、**不发 Release**，避免"能下载但刷不了"的半成品包。
+
 `config.ini` 里 `build_flashpack=true` 即开启；CI 构建后会自动把 flashpack 分卷发布到 Release。
 
 ## 内容基线（关键）
