@@ -256,23 +256,39 @@ echo.
 echo.强制进入 TWRP 第三方 Recovery，不直接重启进系统
 %BIN%\fastboot reboot recovery ||call :ERROR_OPRATE reboot_recovery
 if /i "!wipeData!"=="n" goto TWRP_MANUAL
-echo.等待 TWRP 的 adb 上线，最多 60 秒...
+echo.等待 TWRP 的 adb 上线（最多 180 秒）...
 set /a N=0
 :WAIT_TWRP
 set /a N+=1
-if !N! GTR 60 goto TWRP_TIMEOUT
+if !N! GTR 180 goto TWRP_TIMEOUT
 %BIN%\adb devices 2>&1 |findstr /i "recovery" >nul && goto TWRP_OK
 ping -n 2 127.0.0.1 >nul
 goto WAIT_TWRP
 :TWRP_OK
-echo.已连接 TWRP，正在执行 format data 重建 FBE 密钥
-%BIN%\adb shell twrp format data
+echo.已连接 TWRP，正在重建 /data 文件系统（format data）
+%BIN%\adb shell "twrp format data"
+if errorlevel 1 (
+	color 0c
+	echo.[警告] twrp format data 返回失败，下面会再做挂载校验
+)
+echo.校验 /data 能否挂载...
+%BIN%\adb shell "mount /data 2>/dev/null && echo DATA_MOUNT_OK" 2>&1 |findstr /i "DATA_MOUNT_OK" >nul
+if errorlevel 1 (
+	color 0c
+	echo.[警告] /data 仍无法挂载。请在 TWRP 里手动执行：
+	echo.   清除 -^> 格式化 Data 分区 -^> 输入 yes
+	echo.   然后重启系统；不格式化将无法开机
+	pause
+) else (
+	echo./data 校验通过，重启进系统
+)
 %BIN%\adb reboot
-echo.已重启进系统，首次开机会跑 dexopt，5-10 分钟内发热属正常
+echo.已重启进系统，首次开机会重建 /data 并跑 dexopt，5-10 分钟发热属正常
 goto DONE
 :TWRP_TIMEOUT
-echo.60 秒内未检测到 TWRP 的 adb，请在 TWRP 里手动执行
-echo.清除 -^> 格式化 Data -^> 输入 yes，再重启系统，否则无法开机
+echo.180 秒内未检测到 TWRP 的 adb（可能 TWRP 未开 ADB 调试）
+echo.请在 TWRP 里手动执行：清除 -^> 格式化 Data -^> 输入 yes，再重启系统
+echo.不格式化 Data 将无法开机
 pause
 goto DONE
 :TWRP_MANUAL
