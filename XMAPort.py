@@ -1634,8 +1634,11 @@ def fix_vibrator_hal_tree():
             else:
                 info("  " + line)
     except Exception as e:
-        warn("vibrator HAL dual-instance fix failed (non-fatal): {}".format(e))
-        log_write("WARNING: vibrator HAL fix failed: {}".format(e))
+        # 2026-11-22：本工具曾在仓库重建时丢失，import 失败被这里吞掉，
+        # 结果振动修复静默失效、新包振动不正常却查不到原因。改为显式报错。
+        warn("振动双实例修复失败（不阻断构建，但产物大概率振动异常）: {}".format(e))
+        err("  缺少或损坏: tools/fix_vibrator_hal.py —— 请检查仓库文件完整性")
+        log_write("ERROR: vibrator HAL fix failed: {}".format(e))
 
 
 def fix_density_tree():
