@@ -207,15 +207,20 @@ def detect_content_dir(work, name):
     return os.path.join(work, name)
 
 
-def call(cmd):
+def call(cmd, tail_lines=30):
     try:
         print("    $ " + subprocess.list2cmdline(cmd))
         result = subprocess.run(cmd, capture_output=True, text=True, errors='replace')
         if result.returncode != 0:
-            if result.stdout:
-                print(result.stdout.rstrip())
-            if result.stderr:
-                print(result.stderr.rstrip())
+            # mkfs.erofs 会刷几千行 "Processing ..."，失败时只留尾部便于定位，
+            # 否则重试几次会把 CI 日志淹没。
+            out = (result.stdout or "") + (result.stderr or "")
+            lines = out.rstrip().splitlines()
+            if len(lines) > tail_lines:
+                print("    ... ({} 行输出, 仅显示最后 {})".format(len(lines), tail_lines))
+                lines = lines[-tail_lines:]
+            for line in lines:
+                print(line)
         return result.returncode
     except FileNotFoundError:
         print(f"    [X] 工具未找到: {cmd[0]}")
@@ -799,7 +804,25 @@ def mkerofs(name, work, work_output, fmt_alg, level, utc=None):
            f'--fs-config-file={fixed_fs}',
            f'--file-contexts={fc}',
            out_img, src]
-    return call(cmd)
+    # mkfs.erofs 在 Windows runner 上偶发 1 秒内被终止（输出在半行处硬截断、
+    # 无 returncode 语义），同一输入重跑即可通过。这里最多重试 3 次，
+    # 每次先删掉半成品镜像，避免把截断的 img 当成成功产物。
+    rc = 1
+    for attempt in range(1, 4):
+        if attempt > 1:
+            print("    [!] mkfs.erofs 失败 (rc={}), 第 {}/3 次重试".format(rc, attempt))
+            try:
+                if os.path.exists(out_img):
+                    os.remove(out_img)
+            except OSError:
+                pass
+            time.sleep(3)
+        rc = call(cmd)
+        if rc == 0:
+            break
+    if rc != 0:
+        print("    [X] mkfs.erofs 连续 3 次失败: {}".format(name))
+    return rc
 
 
 # ============================================================

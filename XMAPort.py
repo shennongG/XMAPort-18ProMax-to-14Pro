@@ -1884,6 +1884,20 @@ def create_super_img(pack_cfg, lpc_args, pack_ok):
                                     _lp_slot_suffix(pack_cfg), pack_cfg["device_size"]),
     ]
     cmd += lpc_args
+    # 单个分区打包失败时会被跳过，若不校验就会合出「少一个分区」的 super，
+    # 刷进去必然不开机（2026-11-21 system_ext 打包崩溃踩过）。缺一个即拒绝。
+    _joined = " ".join(lpc_args)
+
+    def _has_part(nm):
+        return ("--partition={}_".format(nm) in _joined or
+                "--partition={}:".format(nm) in _joined)
+
+    _miss = [p for p in ALL_OUTPUT_PARTS if not _has_part(p)]
+    if _miss:
+        err("super 缺少分区: {} —— 有分区打包失败，拒绝生成残缺 super.img".format(
+            ", ".join(_miss)))
+        log_write("ERROR: super missing partitions: " + ",".join(_miss))
+        return 2
     if pack_cfg.get("virtual_ab", "true").lower() == "true":
         cmd.append("--virtual-ab")
     if pack_cfg.get("sparse", "true").lower() == "true":
