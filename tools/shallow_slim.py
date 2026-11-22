@@ -856,6 +856,30 @@ def step_patch_product_props(device, cfg, dry=False):
         ok("移植属性: {} 项（预加载/prestart 关闭 + 机型调优）".format(applied))
     else:
         info("no {} found, skip props".format(conf.name))
+
+    # 「关于手机」里的 HyperOS 版本号来自 odm（整包来自底包），
+    # 不同步的话 system 明明是 4.0.31，设置里仍显示 3.0.310，
+    # 会被误认为刷了底包（2026-11-22 实测踩过）。
+    port_ver = _prop_get(bp, "ro.build.version.incremental") or ""
+    odm_bp = find_file_in_part("odm", "etc/build.prop", TGT_FS)
+    if odm_bp and port_ver.startswith("OS"):
+        old_ver = _prop_get(odm_bp, "ro.mi.os.version.incremental")
+        seg = port_ver.split(".")
+        os_name = ".".join(seg[:2]) if len(seg) >= 2 else port_ver
+        os_code = os_name[2:].split(".")[0] if os_name.startswith("OS") else ""
+        n_odm = 0
+        if not dry:
+            for k, v in (("ro.mi.os.version.incremental", port_ver),
+                         ("ro.mi.os.version.name", os_name)):
+                if _prop_set(odm_bp, k, v, True):
+                    n_odm += 1
+            if os_code and _prop_set(odm_bp, "ro.mi.os.version.code", os_code, True):
+                n_odm += 1
+        ok("HyperOS 版本显示: {} -> {}（{} 项）".format(
+            old_ver or "?", port_ver, n_odm))
+    elif not odm_bp:
+        warn("odm/etc/build.prop 未找到，HyperOS 版本号无法同步")
+
     _bump("ok")
     return True
 
