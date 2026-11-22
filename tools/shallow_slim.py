@@ -764,7 +764,7 @@ def _prop_set(path, key, value, add_if_missing=False):
         out.append("{}={}".format(key, value))
         hit = True
     if hit:
-        p.write_text("\n".join(out) + "\n", encoding="utf-8")
+        p.write_text("\n".join(out) + "\n", encoding="utf-8", newline="\n")
     return hit
 
 

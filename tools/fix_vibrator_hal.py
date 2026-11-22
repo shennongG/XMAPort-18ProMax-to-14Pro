@@ -62,8 +62,11 @@ def _patch_manifest(path, log):
     indent = m.group(1)
     insert = "{0}    <fqname>IVibrator/default</fqname>\n".format(indent)
     txt = txt[:m.start()] + insert + txt[m.start():]
-    path.write_text(txt, encoding="utf-8")
-    log.append("manifest += <fqname>IVibrator/default</fqname>")
+    path.write_text(txt, encoding="utf-8", newline="\n")
+    if b"\r\n" in path.read_bytes():
+        log.append("ERROR manifest 换行被转成 CRLF，init/VINTF 可能解析失败")
+    else:
+        log.append("manifest += <fqname>IVibrator/default</fqname>")
 
 
 def _patch_rc(path, log):
@@ -76,8 +79,11 @@ def _patch_rc(path, log):
         return
     if not txt.endswith("\n"):
         txt += "\n"
-    path.write_text(txt + SERVICE_BLOCK, encoding="utf-8")
-    log.append("rc += vibratorfeature-hal-service-default")
+    path.write_text(txt + SERVICE_BLOCK, encoding="utf-8", newline="\n")
+    if b"\r\n" in path.read_bytes():
+        log.append("ERROR rc 换行被转成 CRLF，Android init 会把 \\r 带进参数")
+    else:
+        log.append("rc += vibratorfeature-hal-service-default")
 
 
 def apply_to_tree(odm_root, cfg_dir=None):
