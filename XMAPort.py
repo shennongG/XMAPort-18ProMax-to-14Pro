@@ -1606,6 +1606,13 @@ def _vbmeta_header(path):
 def fix_vibrator_hal_tree():
     """Step 6: 让 odm 同时提供 IVibrator/vibratorfeature 与 IVibrator/default。
 
+    ⚠️ 默认关闭（XMAPORT_FIX_VIBRATOR=false）。2026-11-23 真机结论：
+    换行符修好之后（rc CRLF=0 / LF=71，已从产物 zip 里验证）产物仍然卡
+    HyperOS 开机动画。两个 HAL 进程同时打开 /dev/qcom_haptic，
+    VibratorManagerService 初始化时等不到有效响应，卡住 system_server。
+    V5（4.0.29）能开机、4.0.31 不行，说明该方案不可跨版本复用。
+    需要换实现（让单个进程同时注册两个 instance），在此之前保持关闭。
+
     2026-11-09 真机定案：Android 17 framework 要求 IVibrator/default，
     MIUI framework 又硬等 IVibrator/vibratorfeature（device compatibility
     matrix 声明）。底包 odm 只注册后者 -> vibratorIds=[] -> 触感全部
@@ -1614,6 +1621,11 @@ def fix_vibrator_hal_tree():
 
     本步骤失败只告警，不阻断移植（工具缺失 / 非 shennong 机型会直接跳过）。
     """
+    if os.environ.get("XMAPORT_FIX_VIBRATOR", "false").strip().lower() not in (
+            "1", "true", "yes", "on"):
+        info("振动双实例修复已跳过（默认关闭，见函数注释）")
+        log_write("SKIP: vibrator dual-instance fix disabled")
+        return
     odm = TGT_FS / "odm"
     if not odm.is_dir():
         warn("odm tree not found, skip vibrator HAL dual-instance fix")
