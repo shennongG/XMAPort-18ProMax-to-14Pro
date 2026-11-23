@@ -265,8 +265,19 @@ if !N! GTR 180 goto TWRP_TIMEOUT
 ping -n 2 127.0.0.1 >nul
 goto WAIT_TWRP
 :TWRP_OK
+echo.卸载可能被 TWRP 挂载的分区（否则 format data 会报 Unable to unmap 而失败）
+%BIN%\adb shell "for m in /system /system_root /vendor /product /odm /system_ext /mi_ext /metadata /cache; do umount $m 2>/dev/null; done"
 echo.已连接 TWRP，正在重建 /data 文件系统（format data）
-%BIN%\adb shell "twrp format data"
+%BIN%\adb shell "twrp format data" > "%TEMP%\xm_fmt.log" 2>&1
+type "%TEMP%\xm_fmt.log"
+findstr /i "Unable to unmap" "%TEMP%\xm_fmt.log" >nul
+if not errorlevel 1 (
+	color 0c
+	echo.[警告] 格式化未完成：仍有分区被占用
+	echo.请进 TWRP 的 Mount 页取消所有勾选，再重跑本脚本
+	pause
+	goto DONE
+)
 if errorlevel 1 (
 	color 0c
 	echo.[警告] twrp format data 返回失败，下面会再做挂载校验

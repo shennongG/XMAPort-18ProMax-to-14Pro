@@ -443,6 +443,8 @@ def gen_force_twrp_bat(staging):
     a("  pause")
     a("  exit /b 0")
     a(")")
+    a('echo.卸载 TWRP 可能挂载的分区（否则 format 会失败）')
+    a('%BIN%\\adb shell "for m in /system /system_root /vendor /product /odm /system_ext /mi_ext /metadata; do umount $m 2>/dev/null; done"')
     a('%BIN%\\adb shell "twrp format data"')
     a('echo.校验 /data 能否挂载...')
     a('%BIN%\\adb shell "mount /data 2>/dev/null && echo DATA_MOUNT_OK" 2>&1 |findstr /i "DATA_MOUNT_OK" >nul')

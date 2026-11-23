@@ -1389,6 +1389,15 @@ def inject_os_version_props(pack_cfg):
     """
     targets = [TGT_FS / "odm" / "etc" / "build.prop",
                TGT_FS / "mi_ext" / "etc" / "build.prop"]
+    # mi_ext_a 是整块复用底包镜像、不重新打包（见下方 copy_partition_image），
+    # 因此写 TGT_FS/mi_ext 对产物没有任何影响，而 mi_ext 最后加载会把 310 覆盖
+    # 回 ro.mi.os.version.*。system/build.prop 最先加载且 ro.* 先设置者生效，
+    # 写这里才能真正压过 mi_ext（2026-11-23 真机：设置里仍显示 3.0.310）。
+    for _rel in ("system/build.prop", "build.prop"):
+        _sb = SRC_FS / "system" / _rel
+        if _sb.is_file():
+            targets.insert(0, _sb)
+            break
     existing = [p for p in targets if p.is_file()]
     if not existing:
         warn("odm/mi_ext build.prop not found, skip HyperOS version props")
