@@ -265,9 +265,18 @@ if !N! GTR 180 goto TWRP_TIMEOUT
 ping -n 2 127.0.0.1 >nul
 goto WAIT_TWRP
 :TWRP_OK
-echo.卸载 /sdcard、/data 与 /metadata（TWRP 常把 /data 挂在 dm 映射上）
-%BIN%\adb shell "umount /sdcard 2>/dev/null; umount /data 2>/dev/null; umount /metadata 2>/dev/null"
-%BIN%\adb shell "dmctl delete userdata 2>/dev/null"
+echo.卸载 /data 的所有挂载点（TWRP 会把 dm 映射同时挂在 /data 与 /data/user/0，
+echo.只卸 /data 会 Device or resource busy，make_f2fs 必然失败）
+%BIN%\adb shell "for m in /data/user/0 /data/user /sdcard /data/media /data /metadata; do umount $m 2>/dev/null; done"
+%BIN%\adb shell "dmctl delete userdata 2>/dev/null; dmctl delete userdata 2>/dev/null"
+%BIN%\adb shell "grep -q 'userdata' /proc/mounts && echo STILL_MOUNTED || echo CLEAN" > "%TEMP%\xm_umount.log" 2>&1
+type "%TEMP%\xm_umount.log"
+findstr /i "STILL_MOUNTED" "%TEMP%\xm_umount.log" >nul
+if not errorlevel 1 (
+	color 0e
+	echo.[提示] 仍有挂载未卸掉，再尝试一次懒卸载
+	%BIN%\adb shell "umount -l /data 2>/dev/null; umount -l /data/user/0 2>/dev/null; dmctl delete userdata 2>/dev/null"
+)
 echo.正在用 make_f2fs 重建 /data（启用 FBE 加密特性，兼容 OS4）
 %BIN%\adb shell "make_f2fs -f -O encrypt,extra_attr,project_quota,compression /dev/block/bootdevice/by-name/userdata" > "%TEMP%\xm_fmt.log" 2>&1
 type "%TEMP%\xm_fmt.log"
