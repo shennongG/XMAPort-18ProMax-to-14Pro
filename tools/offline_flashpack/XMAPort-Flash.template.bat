@@ -278,13 +278,7 @@ if errorlevel 1 (
 	pause
 	goto DONE
 )
-echo.正在重建 /metadata（旧加密密钥会清除，首次开机自动重建）
-%BIN%\adb shell "make_f2fs -f -O encrypt,extra_attr,project_quota,compression /dev/block/bootdevice/by-name/metadata" >> "%TEMP%\xm_fmt.log" 2>&1
-findstr /i "format successful" "%TEMP%\xm_fmt.log" >nul
-if errorlevel 1 (
-	color 0e
-	echo.[警告] /metadata 格式化失败，继续尝试启动
-)
+echo.保留 /metadata（首次启动会自动沿用或重建加密密钥）
 echo.格式化完成，重启进系统
 %BIN%\adb reboot
 echo.已重启进系统，首次开机会重建 /data 并跑 dexopt，5-10 分钟发热属正常
