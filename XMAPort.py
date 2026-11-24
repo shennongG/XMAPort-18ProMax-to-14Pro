@@ -2524,15 +2524,31 @@ def one_click_port(auto=False):
     # framework 扩展。用源包 madrid 的 mi_ext 配 shennong 的 odm/vendor 会导致早期
     # init 崩溃并回落 fastboot。参照 多组已验证基线镜像，
     # mi_ext_a 固定都是 106156032 字节 = 底包 mi_ext，与源 ROM 无关。
-    mi_ext_src = TGT_UNPACK / "mi_ext.img"
-    if mi_ext_src.is_file():
-        log_write("Copying mi_ext from TARGET payload (device-specific)")
-        info("Adding mi_ext from target payload (device-specific)...")
+    # mi_ext 默认整块复用底包镜像（最稳），但底包里的 ro.mi.os.version.* 是
+    # OS3.0/310，会盖掉 system/odm 的补丁。若解包树与 fs_config/file_contexts
+    # 齐全，则按打过补丁的树重新打包，让「设置 -> 全部参数」显示 OS4.0.31。
+    mi_ext_tree = TGT_FS / "mi_ext"
+    mi_ext_cfg = TGT_FS / "config" / "mi_ext_fs_config"
+    mi_ext_fc = TGT_FS / "config" / "mi_ext_file_contexts"
+    mi_ext_bytes = 0
+    if mi_ext_tree.is_dir():
+        mi_ext_bytes = sum(p.stat().st_size for p in mi_ext_tree.rglob("*") if p.is_file())
+    if (mi_ext_tree.is_dir() and mi_ext_cfg.is_file() and mi_ext_fc.is_file()
+            and mi_ext_bytes < 130 * 1024 * 1024):
+        log_write("Packing mi_ext from TARGET tree (version props patched, {:.1f} MB)"
+                  .format(mi_ext_bytes / 1048576))
+        info("Packing mi_ext from target tree (version props patched)...")
+        pack_one_partition("mi_ext", TGT_FS, pack_cfg, lpc_args, counters)
     else:
-        warn("target payload 无 mi_ext.img, 回退到源包(可能不开机)")
-        log_write("WARNING: mi_ext fallback to SOURCE payload (likely unbootable)")
-        mi_ext_src = SRC_UNPACK / "mi_ext.img"
-    copy_partition_image("mi_ext", mi_ext_src, pack_cfg, lpc_args, counters)
+        mi_ext_src = TGT_UNPACK / "mi_ext.img"
+        if mi_ext_src.is_file():
+            log_write("Copying mi_ext from TARGET payload (device-specific)")
+            info("Adding mi_ext from target payload (device-specific)...")
+        else:
+            warn("target payload 无 mi_ext.img, 回退到源包(可能不开机)")
+            log_write("WARNING: mi_ext fallback to SOURCE payload (likely unbootable)")
+            mi_ext_src = SRC_UNPACK / "mi_ext.img"
+        copy_partition_image("mi_ext", mi_ext_src, pack_cfg, lpc_args, counters)
 
     # 处理 vendor：MTK 从 target filesystem 重新打包；高通直接复制目标 payload
     device_platform = pack_cfg.get("device_platform", "qualcomm").lower()
