@@ -436,22 +436,20 @@ def gen_force_twrp_bat(staging):
     a(":TWRP_OK")
     a("echo.")
     a("echo.已进入 TWRP。开机闪退通常是 /data 的 FBE 密钥不匹配，")
-    a("echo.需要执行 清除 -^> 格式化 Data -^> 输入 yes。")
-    a('set /p DOFMT="是否自动执行 twrp format data 并重启系统？[Y/n]: "')
+    a("echo.需要重建 /data 的 f2fs 文件系统（含 FBE 加密特性）。")
+    a('set /p DOFMT="是否自动重建 /data 并重启系统？[Y/n]: "')
     a('if /i "!DOFMT!"=="n" (')
-    a("  echo.请在 TWRP 里手动格式化 Data 后重启")
+    a("  echo.请运行同目录的 3-Format-Data.bat 重建 /data 后重启")
     a("  pause")
     a("  exit /b 0")
     a(")")
-    a('echo.卸载 TWRP 可能挂载的分区（否则 format 会失败）')
-    a('%BIN%\\adb shell "for m in /system /system_root /vendor /product /odm /system_ext /mi_ext /metadata; do umount $m 2>/dev/null; done"')
-    a('%BIN%\\adb shell "twrp format data"')
-    a('echo.校验 /data 能否挂载...')
-    a('%BIN%\\adb shell "mount /data 2>/dev/null && echo DATA_MOUNT_OK" 2>&1 |findstr /i "DATA_MOUNT_OK" >nul')
-    a("if errorlevel 1 (")
-    a("  echo.[警告] /data 仍无法挂载，请在 TWRP 手动 清除 -^> 格式化 Data -^> 输入 yes")
-    a("  pause")
-    a(")")
+    a('echo.卸载 /sdcard、/data 与 /metadata')
+    a('%BIN%\\adb shell "umount /sdcard 2>/dev/null; umount /data 2>/dev/null; umount /metadata 2>/dev/null"')
+    a('%BIN%\\adb shell "dmctl delete userdata 2>/dev/null"')
+    a('echo.重建 /data（启用 FBE 加密特性）...')
+    a('%BIN%\\adb shell "make_f2fs -f -O encrypt,extra_attr,project_quota,compression /dev/block/bootdevice/by-name/userdata"')
+    a('echo.重建 /metadata（首次开机自动重建密钥）...')
+    a('%BIN%\\adb shell "make_f2fs -f -O encrypt,extra_attr,project_quota,compression /dev/block/bootdevice/by-name/metadata"')
     a("%BIN%\\adb reboot")
     a("echo.完成。首次开机会跑 dexopt，5-10 分钟内发热属正常。")
     a("echo.若仍无法开机，请重新运行 XMAPort-Flash.bat 完整重刷。")
@@ -459,7 +457,7 @@ def gen_force_twrp_bat(staging):
     a("exit /b 0")
     a(":NO_ADB")
     a("echo.60 秒内未检测到 TWRP 的 adb，请手动按住 音量上 + 电源 进 recovery，")
-    a("echo.在 TWRP 里执行 清除 -^> 格式化 Data -^> 输入 yes 后重启。")
+    a("echo.请运行同目录的 3-Format-Data.bat 重建 /data 后重启。")
     a("pause")
     a("exit /b 0")
     target = staging / "2-Force-TWRP.bat"
@@ -698,7 +696,7 @@ def _gen_flash_bat_dynamic(staging, device, model, port_ver, base_ver):
     # f2fs，而 shennong 的 fstab 带 FBE/inlinecrypt/metadata_encryption，
     # init 会因 "Can't find valid F2FS filesystem" 挂在 post-fs-data，
     # 表现为永久停在 HyperOS 动画、不发热、pstore 空。清数据必须走
-    # 3-Format-Data.bat 的 "twrp format data" 重建文件系统。
+    # 3-Format-Data.bat 的 make_f2fs 命令重建文件系统。
     a('if /i "!WIPE!"=="y" (')
     a("  echo.  注意: 不要擦除 userdata / metadata (只擦不建 f2fs,")
     a("  echo.        擦 metadata 还会破坏 FBE 密钥，开机回 recovery).")
@@ -758,10 +756,13 @@ def gen_format_data_bat(staging):
     a('for /f "tokens=1" %%i in (\'%ADB% devices ^| findstr /v "List" ^| findstr /v "emulator"\') do set DEV=%%i')
     a('if "!DEV!"=="" ( echo.  [错误] 未找到 TWRP 设备 & pause & exit /b 1 )')
     a("echo.  设备: !DEV!")
-    a("echo.  正在格式化 /data ...")
-    a('%ADB% -s !DEV! shell "twrp format data"')
-    a("echo.  验证 /data 可挂载 ...")
-    a('%ADB% -s !DEV! shell "umount /data 2>/dev/null; mount /data; df -h /data | tail -1"')
+    a("echo.  卸载 /sdcard、/data 与 /metadata ...")
+    a('%ADB% -s !DEV! shell "umount /sdcard 2>/dev/null; umount /data 2>/dev/null; umount /metadata 2>/dev/null"')
+    a('%ADB% -s !DEV! shell "dmctl delete userdata 2>/dev/null"')
+    a("echo.  正在重建 /data（启用 FBE 加密特性）...")
+    a('%ADB% -s !DEV! shell "make_f2fs -f -O encrypt,extra_attr,project_quota,compression /dev/block/bootdevice/by-name/userdata"')
+    a("echo.  正在重建 /metadata（首次开机自动重建密钥）...")
+    a('%ADB% -s !DEV! shell "make_f2fs -f -O encrypt,extra_attr,project_quota,compression /dev/block/bootdevice/by-name/metadata"')
     a("echo.  重启进系统 ...")
     a("%ADB% -s !DEV! reboot")
     a("echo.  完成。首次开机会跑 dexopt, 约 10-20 分钟且机身发热, 请勿中断。")
@@ -874,25 +875,23 @@ def gen_update_binary(staging, device, model, port_ver, base_ver, sec_patch):
     a("    done")
     a("fi")
     # /data 加密兼容性：跨版本移植的 FBE 密钥不通用，未格式化时开机必失败。
-    # 卡刷环境里同样能调 TWRP 的 twrp CLI，直接给用户一个「按音量键格式化」的入口。
-    a("# /data 未挂载时提示并可选格式化（跨版本必须重建 FBE 密钥）")
-    a('if ! grep -q " /data " /proc/mounts 2>/dev/null; then')
-    a('    ui_print " "')
-    a('    ui_print "- /data 当前未挂载（跨版本加密不兼容）"')
-    a('    ui_print "- 首次/跨版本刷入必须格式化 Data，否则开机后会自动回 recovery"')
-    a('    ui_print "- 音量[+] 现在格式化 Data（会清空数据） / 音量[-] 跳过"')
-    a('    if getVolumeKey; then')
-    a('        if command -v twrp >/dev/null 2>&1; then')
-    a('            ui_print "- 正在格式化 data ..."')
-    a('            twrp format data')
-    a('            ui_print "- 格式化完成"')
-    a('        else')
-    a('            ui_print "- 当前 recovery 无 twrp 命令，请在 TWRP 手动格式化"')
-    a('        fi')
-    a('    else')
-    a('        ui_print "- 已跳过；若开机失败请手动 清除 -> 格式化 Data"')
-    a('    fi')
-    a("fi")
+    # TWRP 的 additional.fstab 把 /data 识别成 mifs，`twrp format data` 会直接报
+    # unknown file system；改用 make_f2fs 并显式打开 FBE 所需的 encrypt 特性。
+    a("# 跨版本移植：重建 /data（含 FBE 加密特性）")
+    a('ui_print " "')
+    a('ui_print "- 首次/跨版本刷入必须重建 Data，否则开机后会自动回 recovery"')
+    a('ui_print "- 音量[+] 现在重建 Data（会清空数据） / 音量[-] 跳过"')
+    a('if getVolumeKey; then')
+    a('    ui_print "- 正在卸载 /data ..."')
+    a('    umount /sdcard 2>/dev/null; umount /data 2>/dev/null; umount /metadata 2>/dev/null')
+    a('    dmctl delete userdata 2>/dev/null')
+    a('    ui_print "- 正在重建 /data ..."')
+    a('    make_f2fs -f -O encrypt,extra_attr,project_quota,compression /dev/block/bootdevice/by-name/userdata')
+    a('    make_f2fs -f -O encrypt,extra_attr,project_quota,compression /dev/block/bootdevice/by-name/metadata')
+    a('    ui_print "- 格式化完成"')
+    a('else')
+    a('    ui_print "- 已跳过；若开机失败请手动重建 Data"')
+    a('fi')
     a('ui_print "- 开始刷机"')
     for p in firmware:
         a('extract_flash "images/{}.img" {}'.format(p, p))
@@ -977,13 +976,13 @@ def gen_readme(staging, device, model, port_ver, base_ver):
 3. 双击运行 XMAPort-Flash.bat, 按提示操作
    - 脚本先校验 super.img 字节数, 大小不符会拒绝刷入 (防止刷入截断的 super)
    - 强制刷入 TWRP 到 recovery 双槽, 不会刷回官方 Recovery
-   - 刷完 super 后不直接重启进系统, 而是进入 TWRP 执行 format data
-     (重建 FBE 密钥; fastboot erase userdata/metadata 只擦不建, 会回 recovery)
+   - 刷完 super 后不直接重启进系统, 而是进入 TWRP 用 make_f2fs 重建 /data
+     (开启 FBE 加密特性; fastboot erase userdata/metadata 只擦不建, 会回 recovery)
 4. 需要已安装小米驱动; BL 已解锁
 
 【开机闪退 / 卡 LOGO 救砖】
 不用重刷 8GB 的 super: 双击 2-Force-TWRP.bat
-  -> 强制双槽刷 TWRP -> 自动进 TWRP -> 自动 format data -> 重启
+  -> 强制双槽刷 TWRP -> 自动进 TWRP -> 自动重建 /data -> 重启
 仍不行再运行 3-Format-Data.bat 单独重建 /data, 最后才重刷完整包。
 
 【卡刷 recovery】

@@ -265,46 +265,39 @@ if !N! GTR 180 goto TWRP_TIMEOUT
 ping -n 2 127.0.0.1 >nul
 goto WAIT_TWRP
 :TWRP_OK
-echo.卸载可能被 TWRP 挂载的分区（否则 format data 会报 Unable to unmap 而失败）
-%BIN%\adb shell "for m in /system /system_root /vendor /product /odm /system_ext /mi_ext /metadata /cache; do umount $m 2>/dev/null; done"
-echo.已连接 TWRP，正在重建 /data 文件系统（format data）
-%BIN%\adb shell "twrp format data" > "%TEMP%\xm_fmt.log" 2>&1
+echo.卸载 /sdcard、/data 与 /metadata（TWRP 常把 /data 挂在 dm 映射上）
+%BIN%\adb shell "umount /sdcard 2>/dev/null; umount /data 2>/dev/null; umount /metadata 2>/dev/null"
+%BIN%\adb shell "dmctl delete userdata 2>/dev/null"
+echo.正在用 make_f2fs 重建 /data（启用 FBE 加密特性，兼容 OS4）
+%BIN%\adb shell "make_f2fs -f -O encrypt,extra_attr,project_quota,compression /dev/block/bootdevice/by-name/userdata" > "%TEMP%\xm_fmt.log" 2>&1
 type "%TEMP%\xm_fmt.log"
-findstr /i "Unable to unmap" "%TEMP%\xm_fmt.log" >nul
-if not errorlevel 1 (
+findstr /i "format successful" "%TEMP%\xm_fmt.log" >nul
+if errorlevel 1 (
 	color 0c
-	echo.[警告] 格式化未完成：仍有分区被占用
-	echo.请进 TWRP 的 Mount 页取消所有勾选，再重跑本脚本
+	echo.[错误] /data 格式化失败，请把上面的日志发出来
 	pause
 	goto DONE
 )
+echo.正在重建 /metadata（旧加密密钥会清除，首次开机自动重建）
+%BIN%\adb shell "make_f2fs -f -O encrypt,extra_attr,project_quota,compression /dev/block/bootdevice/by-name/metadata" >> "%TEMP%\xm_fmt.log" 2>&1
+findstr /i "format successful" "%TEMP%\xm_fmt.log" >nul
 if errorlevel 1 (
-	color 0c
-	echo.[警告] twrp format data 返回失败，下面会再做挂载校验
+	color 0e
+	echo.[警告] /metadata 格式化失败，继续尝试启动
 )
-echo.校验 /data 能否挂载...
-%BIN%\adb shell "mount /data 2>/dev/null && echo DATA_MOUNT_OK" 2>&1 |findstr /i "DATA_MOUNT_OK" >nul
-if errorlevel 1 (
-	color 0c
-	echo.[警告] /data 仍无法挂载。请在 TWRP 里手动执行：
-	echo.   清除 -^> 格式化 Data 分区 -^> 输入 yes
-	echo.   然后重启系统；不格式化将无法开机
-	pause
-) else (
-	echo./data 校验通过，重启进系统
-)
+echo.格式化完成，重启进系统
 %BIN%\adb reboot
 echo.已重启进系统，首次开机会重建 /data 并跑 dexopt，5-10 分钟发热属正常
 goto DONE
 :TWRP_TIMEOUT
 echo.180 秒内未检测到 TWRP 的 adb（可能 TWRP 未开 ADB 调试）
-echo.请在 TWRP 里手动执行：清除 -^> 格式化 Data -^> 输入 yes，再重启系统
+echo.请运行同目录的 3-Format-Data.bat 重建 /data，再重启系统
 echo.不格式化 Data 将无法开机
 pause
 goto DONE
 :TWRP_MANUAL
-echo.你选择不自动清除数据。请在 TWRP 里手动执行
-echo.清除 -^> 格式化 Data -^> 输入 yes，再重启系统
+echo.你选择不自动清除数据。请运行同目录的 3-Format-Data.bat
+echo.重建 /data 后再重启系统
 echo.注意：首次刷入或从加密 Data 的包互刷，不格式化 Data 将无法开机
 pause
 goto DONE
