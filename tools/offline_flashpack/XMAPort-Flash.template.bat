@@ -279,9 +279,40 @@ if errorlevel 1 (
 	goto DONE
 )
 echo.保留 /metadata（首次启动会自动沿用或重建加密密钥）
-echo.格式化完成，重启进系统
+echo.格式化完成，正在重启进系统
 %BIN%\adb reboot
-echo.已重启进系统，首次开机会重建 /data 并跑 dexopt，5-10 分钟发热属正常
+set /a RETRY=0
+set /a WAIT=0
+:WAIT_SYSTEM
+timeout /t 5 /nobreak >nul
+set /a WAIT+=5
+if !WAIT! GTR 300 goto BOOT_TIMEOUT
+set "MODE="
+for /f "skip=1 tokens=1,2" %%A in ('%BIN%\adb devices 2^>nul') do (
+	if /i "%%B"=="recovery" set "MODE=recovery"
+	if /i "%%B"=="device" set "MODE=device"
+)
+if /i "!MODE!"=="recovery" (
+	set /a RETRY+=1
+	if !RETRY! GTR 2 goto BOOT_TIMEOUT
+	echo.首次启动未完成（正在生成加密密钥），自动再重启一次...
+	%BIN%\adb reboot
+	set /a WAIT=0
+	goto WAIT_SYSTEM
+)
+if /i "!MODE!"=="device" (
+	set "BC="
+	for /f "delims=" %%C in ('%BIN%\adb shell getprop sys.boot_completed 2^>nul') do set "BC=%%C"
+	if "!BC!"=="1" goto BOOT_OK
+)
+goto WAIT_SYSTEM
+:BOOT_OK
+echo.已进入系统。首次开机 dexopt 需要 5-10 分钟，发热属正常
+goto DONE
+:BOOT_TIMEOUT
+echo.[警告] 5 分钟内未检测到系统启动完成
+echo.请手动重启一次；若仍回 recovery，请把屏幕拍照发出来
+pause
 goto DONE
 :TWRP_TIMEOUT
 echo.180 秒内未检测到 TWRP 的 adb（可能 TWRP 未开 ADB 调试）
