@@ -38,6 +38,11 @@ on:
         required: false
         type: boolean
         default: false
+      vibrator:
+        description: '启用振动修复（给 odm 增加 IVibrator/default 实例）'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   porting:
@@ -52,6 +57,7 @@ jobs:
       # UnicodeEncodeError 直接 exit 1（2026-11-21 verify_flashpack 踩过）。
       PYTHONIOENCODING: utf-8
       PYTHONUTF8: '1'
+      XMAPORT_FIX_VIBRATOR: ${{ inputs.vibrator }}
 
     steps:
       - uses: actions/checkout@v6

@@ -106,6 +106,22 @@ def apply_to_tree(odm_root, cfg_dir=None):
             log.append("WARN cannot copy hal: {}".format(e))
             return log
 
+    # 关键：复制出来的二进制如果仍写着 /vibratorfeature，会再次注册同名实例，
+    # addService 失败后 init 反复重启服务，表现就是卡 HyperOS。
+    # 把只出现一次的实例名改成 /default，两个进程各注册一个实例。
+    try:
+        raw = dst.read_bytes()
+        old = b"/vibratorfeature\x00"
+        if raw.count(old) == 1:
+            new = b"/default\x00" + b"\x00" * (len(old) - len(b"/default\x00"))
+            dst.write_bytes(raw.replace(old, new, 1))
+            log.append("hal .default instance string -> /default")
+        else:
+            log.append("WARN instance string count={} (expected 1), binary not patched"
+                       .format(raw.count(old)))
+    except OSError as e:
+        log.append("WARN cannot patch hal instance: {}".format(e))
+
     _patch_manifest(root / MANIFEST_REL, log)
     _patch_rc(root / RC_REL, log)
     return log

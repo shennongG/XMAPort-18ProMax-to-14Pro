@@ -1617,10 +1617,10 @@ def fix_vibrator_hal_tree():
 
     ⚠️ 默认关闭（XMAPORT_FIX_VIBRATOR=false）。2026-11-23 真机结论：
     换行符修好之后（rc CRLF=0 / LF=71，已从产物 zip 里验证）产物仍然卡
-    HyperOS 开机动画。两个 HAL 进程同时打开 /dev/qcom_haptic，
-    VibratorManagerService 初始化时等不到有效响应，卡住 system_server。
-    V5（4.0.29）能开机、4.0.31 不行，说明该方案不可跨版本复用。
-    需要换实现（让单个进程同时注册两个 instance），在此之前保持关闭。
+    HyperOS 开机动画。原因是复制出的 .default 二进制里实例名仍是
+    /vibratorfeature，两个进程重复注册同名实例，addService 失败后 init
+    反复重启服务。现已在复制后把该字符串改成 /default（见
+    tools/fix_vibrator_hal.py），两个进程各注册一个实例。
 
     2026-11-09 真机定案：Android 17 framework 要求 IVibrator/default，
     MIUI framework 又硬等 IVibrator/vibratorfeature（device compatibility
