@@ -30,7 +30,7 @@
     python tools/shallow_slim.py icons      # 仅图标资源替换
     python tools/shallow_slim.py firmware   # 仅固件层（KernelSU/recovery/刷机脚本）
     python tools/shallow_slim.py oat        # 仅清理过期 services odex/vdex/art
-    python tools/shallow_slim.py align      # 仅按完美包基线裁剪 product
+    python tools/shallow_slim.py align      # 仅按内容基线裁剪 product
     python tools/shallow_slim.py compat     # 仅注入跨版本兼容文件（VNDK/mapping）
     python tools/shallow_slim.py check      # 只体检不改动
 
@@ -782,7 +782,7 @@ def _prop_get(path, key):
 def step_patch_product_props(device, cfg, dry=False):
     """把 product/build.prop 改成「目标机型」，并写入跨版本移植必需属性。
 
-    2026-11-21 逐键对比 X-MiPort 完美包（真机可开机）发现两处本项目完全没做的事：
+    2026-11-21 逐键对比 参考基线（真机可开机）发现两处本项目完全没做的事：
 
     1. 机型标识仍是源机：`ro.product.product.name=miproduct_madrid`、
        `ro.build.flavor=miproduct_madrid-user`、`ro.build.description=madrid-user ...`、
@@ -791,7 +791,7 @@ def step_patch_product_props(device, cfg, dry=False):
     2. 源包的 ART 预加载 / 预缓存 / prestart 全部开着。跨版本移植后源包的
        预编译产物在目标底包上失效，开启预加载会加载失效类，表现为卡开机动画。
 
-    完美包的做法：机型标识改成 shennong，并把
+    参考基线的做法：机型标识改成 shennong，并把
     `persist.sys.{art_startup_class_preload,precache,preload,app_dexfile_preload}.enable`
     与 `persist.sys.prestart.*` 全部设为 false。清单见
     devices/<device>/product_props.conf。
@@ -1196,9 +1196,8 @@ def step_drop_stale_services_oat(device, cfg, dry=False):
                     targets.append(f)
 
     # system_ext: 保留 miui-services / MiuiSystemUI 的预编译 oat。
-    # 2026-11-15 借鉴同版本 X-MiPort 4.0.29 完美包（真机可开机）与本项目
-    # 已验证 V5：两者 system_ext/framework/oat 下均保留 34~38 个
-    # miui-services.* oat；而 Actions 全新构建把 system_ext 这批 oat 全删后
+    # 2026-11-15 参考已验证基线（真机可开机）：system_ext/framework/oat 下
+    # 保留 34~38 个 miui-services.* oat；而 Actions 全新构建把 system_ext 这批 oat 全删后
     # 出现「反复重启进 RE、format data 后仍卡 HyperOS 二屏」。
     # config.ini 为 disable_signature_verification=false，jar 未被改写，
     # 这些 oat 仍然有效，删除反而破坏了已验证基线。
@@ -1335,15 +1334,15 @@ def step_inject_boot_compat(device, cfg, dry=False):
 
 
 def step_align_perfect_product(device, cfg, dry=False):
-    """按 X-MiPort 同版本完美包裁剪 product 中的 madrid 专属资源。
+    """按内容基线裁剪 product 中的 madrid 专属资源。
 
-    2026-11-15 三方对比：完美包与 V5 的 product 均不含 media/rearscreen
+    2026-11-15 三方对比：已验证基线的 product 均不含 media/rearscreen
     及多余的 precust_theme / subscreencenter / overlay 条目；而 shallow 全新
     构建带入了 353 项两个可开机包都没有的内容，真机反复重启进 RE、卡二屏。
     清单 devices/<device>/perfect_remove_paths.txt 由三方清单求差生成，
-    只删「NEW 独有且 PERFECT/V5 都不含」的文件，目录保留（空目录无害）。
+    只删「NEW 独有且 PERFECT/已验证版本 都不含」的文件，目录保留（空目录无害）。
     """
-    title("SHALLOW 8/8  对齐完美包 product 内容")
+    title("SHALLOW 8/8  对齐参考基线 product 内容")
     if not get_bool(cfg, "align_perfect_product", True):
         info("align_perfect_product=false, skipped")
         _bump("skip")
@@ -1383,7 +1382,7 @@ def step_align_perfect_product(device, cfg, dry=False):
     ok("perfect-baseline product trim: {} file(s) {}".format(
         removed, "would be removed" if dry else "removed"))
 
-    # ---- 补入：完美包有、源包没有的底包原生文件 ----
+    # ---- 补入：参考基线有、源包没有的底包原生文件 ----
     # 只删不补会让产物缺 WMService / UPTsmService / pangu NQNfcNci 等
     # shennong 原生服务与 system_ext 的 miui-services oat，真机卡 HyperOS
     # 二屏（2026-11-21 定性）。清单第一段是分区名，其余为分区内相对路径。

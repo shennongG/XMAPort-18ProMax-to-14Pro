@@ -1,19 +1,13 @@
-# XMAPort 完美包补入清单（shennong / 18 Pro Max -> 14 Pro）
+# 内容基线补入清单（shennong / 18 Pro Max -> 14 Pro）
 #
-# 2026-11-21 逐文件实测定性：X-MiPort 4.0.29 完美包（真机可开机）不是
-# 「只裁剪源包」，而是：
-#   product     源包 2533 - 删 363 + 补 139 = 2309
-#   system_ext  源包 3661 + 补 34（miui-services oat）= 3695
-# 补入项全部是 14 Pro 底包（310）原生、madrid 4.0.x 没有的系统文件：
-#   WMService / UPTsmService / app/system/system.apk / pangu NQNfcNci /
-#   talkback / AutoRegistration / system_ext miui-services 预编译 oat
-# 此前本项目只删不补，产物缺这些服务，真机反复卡 HyperOS 二屏、机身不热。
+# 以下路径为底包原生、源包缺失的系统文件，构建时从底包 product 复制补齐。
+# 补入项包括 WMService / UPTsmService / app/system/system.apk / pangu NQNfcNci /
+# talkback / AutoRegistration / system_ext miui-services 预编译 oat 等。
 #
-# 文件取自 config.ini [target] 下载的底包，不随仓库分发
-# （相机 apk 175 MB 等大文件会超 GitHub 单文件限制）。
+# 文件取自 config.ini [target] 下载的底包，不随仓库分发。
 #
 # 格式：<分区>/<分区内相对路径>，一行一条。
-# 底包缺失的条目会汇总告警；CI 用 perfect_baseline.json 的
+# 底包缺失的条目会汇总告警；CI 使用 perfect_baseline.json 中的
 # product_required_dirs 与 system_ext_min_miui_services_oat 硬校验。
 
 product/app/AnalyticsCore/AnalyticsCore.apk

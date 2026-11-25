@@ -257,7 +257,7 @@ overlay/NavigationBarModeGesturalNarrowBack/NavigationBarModeGesturalOverlayNarr
 overlay/NavigationBarModeGesturalWideBack/NavigationBarModeGesturalOverlayWideBack.apk
 priv-app/MIUIBrowser/MIUIBrowser.apk
 
-# 2026-11-21 补充：完美包没有、此前产物残留的 madrid 资源/预装应用
+# 2026-11-21 补充：参考基线没有、此前产物残留的 madrid 资源/预装应用
 app/MiAONServiceX/MiAONServiceX.apk
 app/MiAONServiceX/oat/arm64/MiAONServiceX.odex
 app/MiAONServiceX/oat/arm64/MiAONServiceX.vdex

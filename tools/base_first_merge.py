@@ -7,7 +7,7 @@
 XMAPort 默认路线是「源包为主」：system / system_ext / product 整体取自
 4.0.29 源包(madrid)，再靠一堆补丁把机型差异抹平（密度 480→560、删 madrid
 背屏/副屏资源、补 VNDK compat、补 30.0 SELinux mapping、处理失效 oat）。
-同版本 X-MiPort 完美包实测是另一条路线：以 310 底包(shennong)为骨架，
+同版本已验证基线实测是另一条路线：以 310 底包(shennong)为骨架，
 只把 HyperOS 4 的 framework / 应用增量替换进去，因此密度、机型资源、
 oat 天然配套。
 

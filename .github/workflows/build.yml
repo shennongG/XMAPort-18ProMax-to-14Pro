@@ -19,7 +19,7 @@ on:
         required: false
         type: string
       shallow:
-        description: '打包前执行精简阶段 Step 6（含完美包基线对齐）'
+        description: '打包前执行精简阶段 Step 6（含内容基线对齐）'
         required: false
         type: boolean
         default: true
@@ -34,7 +34,7 @@ on:
         type: boolean
         default: true
       base_first:
-        description: '实验性：以 310 底包为骨架 + 4.0.x 增量（见 docs/shennong/base-first-mode.md）'
+        description: '实验性：以 310 底包为骨架 + 4.0.x 增量（规则见 devices/shennong/base_first_rules.conf）'
         required: false
         type: boolean
         default: false
@@ -123,12 +123,12 @@ jobs:
           if ("${{ inputs.slim_only }}" -eq "true") { $args += "--slim-only" }
           python XMAPort.py @args
 
-      - name: Verify against perfect baseline
+      - name: Verify content baseline
         shell: pwsh
         if: inputs.slim_only != true
         run: |
           python tools/verify_perfect_baseline.py --tree workspace/source_filesystem --device ${{ inputs.device }}
-          if ($LASTEXITCODE -ne 0) { Write-Error "内容基线校验失败 - 见 docs/shennong/perfect-baseline.md"; exit 1 }
+          if ($LASTEXITCODE -ne 0) { Write-Error "内容基线校验失败，请查看构建日志"; exit 1 }
 
       - name: Pack/split output
         shell: pwsh

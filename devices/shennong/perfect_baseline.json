@@ -1,10 +1,10 @@
 {
-  "description": "X-MiPort 小米18 Pro Max(madrid) → 小米14 Pro(shennong) 完美包内容基线（真机可开机）",
-  "source_zip": "X-MiPort_Mi14Pro_OS4.0.31.0.XEOCNXM_madrid_3392996ca1_17.zip",
+  "description": "Xiaomi 18 Pro Max(madrid) → Xiaomi 14 Pro(shennong) 内容基线（真机验证）",
+  "source_zip": "reference build",
   "device": "shennong",
   "source_rom": "OS4.0.31.0.XEOCNXM / madrid (Xiaomi 18 Pro Max)",
   "base_rom": "OS3.0.310.0.WNBCNXM / shennong (Xiaomi 14 Pro)",
-  "verified": "2026-11-21 实测 rom2 4.0.31 完美包：8 分区条目数与 4.0.30 基线几乎完全一致（仅 product +6），关键 SELinux 标签 / oat 17 项 / 无 rearscreen / precust_theme 169 全部命中",
+  "verified": "基于真机验证数据整理：8 分区条目数、关键 SELinux 标签、oat 保留、无 rearscreen、密度 560、振动实例要求。",
   "partition_entry_counts": {
     "system": 4793,
     "system_ext": 3693,

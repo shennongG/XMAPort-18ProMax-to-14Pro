@@ -13,7 +13,7 @@
 （device compatibility matrix 里声明），只把 vibratorfeature 改成
 default 会卡 HyperOS 开机界面。
 
-因此必须两个实例同时存在。做法（与 V5 真机验证一致）：
+因此必须两个实例同时存在。做法（已在真机验证）：
 
     1. 复制 HAL 二进制为 ...service.default（二进制按 argv[0] 区分实例）
     2. manifest 追加 <fqname>IVibrator/default</fqname>

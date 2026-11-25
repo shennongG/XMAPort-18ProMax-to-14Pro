@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """逐分区、逐文件对比两份 `extract.erofs -p` 清单，输出 Markdown 差异报告。
 
-用于「可开机完美包 vs 本项目构建产物」的定位：真机卡 HyperOS 二屏时，
+用于「可开机参考基线 vs 本项目构建产物」的定位：真机卡 HyperOS 二屏时，
 静态基线（数量/关键标签）可能全过，但文件级差异才是根因。
 
 清单目录约定：<dir>/<part>.txt（由 extract.erofs -p -i xxx.img -s 生成）。
@@ -54,8 +54,8 @@ def group_key(p, depth=2):
 def diff_part(part, left, right, verbose):
     lines = []
     lset, rset = set(left), set(right)
-    only_l = sorted(lset - rset)   # 完美包有、产物没有 → 缺失
-    only_r = sorted(rset - lset)   # 产物有、完美包没有 → 多余
+    only_l = sorted(lset - rset)   # 参考基线有、产物没有 → 缺失
+    only_r = sorted(rset - lset)   # 产物有、参考基线没有 → 多余
     label_diff, meta_diff = [], []
     for p in sorted(lset & rset):
         lt, lu, lg, lm, ll = left[p]
@@ -70,9 +70,9 @@ def diff_part(part, left, right, verbose):
     lines.append("")
     lines.append("| 项 | 数值 |")
     lines.append("| --- | --- |")
-    lines.append("| 完美包条目 | {} |".format(len(left)))
+    lines.append("| 参考基线条目 | {} |".format(len(left)))
     lines.append("| 产物条目 | {} |".format(len(right)))
-    lines.append("| 缺失（完美包有） | {} |".format(len(only_l)))
+    lines.append("| 缺失（参考基线有） | {} |".format(len(only_l)))
     lines.append("| 多余（产物独有） | {} |".format(len(only_r)))
     lines.append("| 标签不同 | {} |".format(len(label_diff)))
     lines.append("| 属主/权限不同 | {} |".format(len(meta_diff)))
@@ -96,7 +96,7 @@ def diff_part(part, left, right, verbose):
     if label_diff:
         lines.append("### 标签不同（高危：直接影响 SELinux 放行）")
         lines.append("")
-        lines.append("| 路径 | 完美包 | 产物 |")
+        lines.append("| 路径 | 参考基线 | 产物 |")
         lines.append("| --- | --- | --- |")
         for p, a, b in label_diff[:60]:
             lines.append("| `{}` | `{}` | `{}` |".format(p, a, b))
@@ -108,7 +108,7 @@ def diff_part(part, left, right, verbose):
     if meta_diff:
         lines.append("### 属主/权限不同")
         lines.append("")
-        lines.append("| 路径 | 完美包 uid/gid/mode | 产物 |")
+        lines.append("| 路径 | 参考基线 uid/gid/mode | 产物 |")
         lines.append("| --- | --- | --- |")
         for p, a, b in meta_diff[:40]:
             lines.append("| `{}` | `{}` | `{}` |".format(p, a, b))
@@ -135,7 +135,7 @@ def diff_part(part, left, right, verbose):
 
 def main():
     ap = argparse.ArgumentParser(description="逐文件对比两份分区清单")
-    ap.add_argument("--left", required=True, help="基准目录（可开机完美包清单）")
+    ap.add_argument("--left", required=True, help="基准目录（可开机参考基线清单）")
     ap.add_argument("--right", required=True, help="待检目录（本项目产物清单）")
     ap.add_argument("--only", default="", help="只比这些分区，逗号分隔")
     ap.add_argument("--out", default=None, help="输出 Markdown 路径")
@@ -145,7 +145,7 @@ def main():
     ld, rd = Path(args.left), Path(args.right)
     parts = [p.strip() for p in args.only.split(",")] if args.only else list(PARTS)
     lines = ["# 分区内容差异报告", "",
-             "- 基准（完美包）：`{}`".format(ld), "- 待检（产物）：`{}`".format(rd), ""]
+             "- 基准（参考基线）：`{}`".format(ld), "- 待检（产物）：`{}`".format(rd), ""]
     total_missing = total_extra = total_label = 0
     for part in parts:
         left = load(ld / (part + ".txt"))

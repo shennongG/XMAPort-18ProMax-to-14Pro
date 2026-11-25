@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""按同版本「完美包」内容基线校验构建产物。
+"""按同版本内容基线校验构建产物。
 
 背景：2026-11-15 的 Actions 全新构建，LP 结构、无标签文件统计全部通过，
-真机却反复重启进 RE、format data 后仍卡 HyperOS 二屏。对照 X-MiPort 同版本
-可开机包与本项目 V5，发现两者在三个内容项上完全一致、全新构建全部偏离。
+真机却反复重启进 RE、format data 后仍卡 HyperOS 二屏。对照已验证的同版本基线，
+发现失败包在三个内容项上同时偏离。
 本工具把这条基线固化下来，让 CI / 本地在出包后就能拦住同类包。
 
 两种输入（任选其一）：
@@ -214,7 +214,7 @@ def check(data, base, strict_counts=False):
         n = sum(1 for p in paths if p.startswith(d.rstrip("/") + "/") or p == d)
         add(n == 0, "product 禁用目录 " + d, "{} 项".format(n))
 
-    # 完美包「补入」的应用必须存在：源包 madrid 4.0.x 本身没有这些
+    # 参考基线「补入」的应用必须存在：源包 madrid 4.0.x 本身没有这些
     # shennong 原生服务（WMService / UPTsmService / pangu NQNfcNci …），
     # 只删不补会让真机卡 HyperOS 二屏（2026-11-21 定性）。
     for d in base.get("product_required_dirs", []):
@@ -268,10 +268,10 @@ def check(data, base, strict_counts=False):
             if got is None:
                 continue
             add(abs(got - int(expect)) <= 200, "文件数 " + part,
-                "{} / 完美包 {}".format(got, expect), warn=True)
+                "{} / 参考基线 {}".format(got, expect), warn=True)
 
     print("=" * 68)
-    print(" 完美包内容基线校验  (mode={}, baseline={})".format(
+    print(" 内容基线校验  (mode={}, baseline={})".format(
         data["mode"], base.get("source_zip", "?")))
     print("=" * 68)
     fails = 0
@@ -288,13 +288,13 @@ def check(data, base, strict_counts=False):
     if fails:
         print(" [FAIL] {} 项不达标：该产物偏离已验证基线，不建议上机。".format(fails))
     else:
-        print(" [PASS] 全部关键项对齐完美包基线" +
+        print(" [PASS] 全部关键项对齐内容基线" +
               ("（{} 项 WARN）".format(warns) if warns else ""))
     return 1 if fails else 0
 
 
 def main():
-    ap = argparse.ArgumentParser(description="按完美包内容基线校验产物")
+    ap = argparse.ArgumentParser(description="按内容基线校验产物")
     ap.add_argument("--tree", help="workspace/source_filesystem 内容树")
     ap.add_argument("--lists-dir", help="extract.erofs -p -s 清单目录")
     ap.add_argument("--tag", help="清单文件名中的批次标记，如 new / perfect / 1")

@@ -781,7 +781,7 @@ def gen_update_binary(staging, device, model, port_ver, base_ver, sec_patch):
 
     # ZIP64 关键：super.img.zst 约 6.4 GB，超过 4 GB。Recovery 自带的 busybox/toybox
     # unzip 多数不支持 ZIP64，会静默截断或直接报错。随包的 7zzs 支持 ZIP64，
-    # 与完美包（X-MiPort）做法一致；只有 7zzs 缺失时才退回 unzip。
+    # 与已验证的一体包做法一致；只有 7zzs 缺失时才退回 unzip。
     has_7zzs = (staging / "bin" / "android" / "7zzs").is_file()
     extract_one = ('/tmp/bin/android/7zzs e -so "$ZIPFILE"' if has_7zzs
                    else 'unzip -p "$ZIPFILE"')
